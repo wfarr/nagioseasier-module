@@ -11,12 +11,6 @@
 #include <nagios/nebmodules.h>
 #include <nagios/nebcallbacks.h>
 
-
-/* set NSCGI because statusdata.h won't load our types otherwise */
-#define NSCGI
-#include <nagios/statusdata.h>
-#undef NSCGI
-
 /*
   #include "../include/nebstructs.h"
   #include "../include/broker.h"
@@ -28,9 +22,6 @@ NEB_API_VERSION(CURRENT_NEB_API_VERSION)
 /* copied to stop the compiler bitching */
 int qh_deregister_handler(const char* name);
 int qh_register_handler(const char* name, const char* description, unsigned int options, qh_handler handler);
-
-hoststatus* find_hoststatus(char* host_name);
-servicestatus* find_servicestatus(char* host_name, char* svc_desc);
 
 static int nagioseasier_query_handler(int sd, char* buf, unsigned int len);
 static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
@@ -142,32 +133,28 @@ toggle_notifications_for_obj(int sd, const char* obj, bool enable)
 }
 
 static char*
-format_status_for_service_or_host(int status, host* hst, service* svc)
+format_state_for_service_or_host(int state, host* hst, service* svc)
 {
   if (svc) {
-    switch(status) {
-    case SERVICE_PENDING:
-      return "PENDING";
-    case SERVICE_OK:
+    switch(state) {
+    case STATE_OK:
       return "OK";
-    case SERVICE_WARNING:
+    case STATE_WARNING:
       return "WARNING";
-    case SERVICE_UNKNOWN:
+    case STATE_UNKNOWN:
       return "UNKNOWN";
-    case SERVICE_CRITICAL:
+    case STATE_CRITICAL:
       return "CRITICAL";
     }
   }
 
   if (hst) {
-    switch(status) {
-    case HOST_PENDING:
-      return "PENDING";
-    case SD_HOST_UP:
+    switch(state) {
+    case STATE_UP:
       return "UP";
-    case SD_HOST_DOWN:
+    case STATE_DOWN:
       return "DOWN";
-    case SD_HOST_UNREACHABLE:
+    case STATE_UNREACHABLE:
       return "UNREACHABLE";
     }
   }
@@ -182,48 +169,34 @@ show_status_for_obj(int sd, const char* obj)
   service* svc;
   find_host_or_service(obj, &hst, &svc);
 
-  int   status;
+  int   state;
   char* output;
 
   if (svc) {
-    servicestatus* svc_stat = find_servicestatus(svc->host_name, svc->description);
-
-    if (!svc_stat) {
-      nsock_printf_nul(sd, "find_servicestatus() failed for %s/%s\n", svc->host_name, svc->description);
-      return 400;
-    }
-
-    status = svc_stat->status;
-    output = svc_stat->plugin_output;
+    state = svc->current_state;
+    output = svc->plugin_output;
   } else if (hst) {
-    hoststatus* host_stat = find_hoststatus(hst->name);
-
-    if (!host_stat) {
-      nsock_printf_nul(sd, "find_hoststatus() failed for %s\n", hst->name);
-      return 400;
-    }
-
-    status = host_stat->status;
-    output = host_stat->plugin_output;
+    state = hst->current_state;
+    output = hst->plugin_output;
   } else {
     nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
     return 404;
   }
 
-  char* friendly_status = format_status_for_service_or_host(status, hst, svc);
+  char* friendly_state = format_state_for_service_or_host(state, hst, svc);
 
-  if (friendly_status) {
+  if (friendly_state) {
 
     nsock_printf_nul(sd, "%s => %s: %s\n",
 		     obj,
-		     friendly_status,
+		     friendly_state,
 		     output);
     return 200;
 
   }
 
   nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n",
-		   status);
+		   state);
   return 400;
 }
 
