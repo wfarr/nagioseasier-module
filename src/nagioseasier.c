@@ -90,7 +90,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
   }
 
   if (obj && string_equals(action, "schedule_downtime")) {
-    unsigned long minutes;
+    unsigned long minutes = 0L;
     char* comment_data;
 
     // assume the next argument is number of minutes
