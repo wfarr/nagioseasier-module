@@ -61,7 +61,6 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 
   char* action = buf;
   char* obj;
-  char* rest;
 
   /* separate our action and obj */
   if ((obj = memchr(buf, ' ', len))) {
@@ -69,6 +68,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
   }
 
   /* shove the rest of the input into rest, leave obj alone */
+  char* rest;
   if ((rest = memchr(obj, ' ', strlen(obj)))) {
     *(rest++) = 0;
   }
@@ -94,8 +94,8 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
     return toggle_notifications_for_obj(sd, obj, false);
   }
 
-  if (obj && (string_equals(action, "schedule_downtime"))) {
-    unsigned long int minutes = 15L;
+  if (obj && string_equals(action, "schedule_downtime")) {
+    unsigned long minutes = 15L;
 
     // assume the next argument is number of minutes
     if (rest) {
@@ -108,7 +108,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
       minutes = strtoul(rest, NULL, 10);
 
       if (minutes <= 0) {
-	minutes = 15L;
+        minutes = 15L;
       }
     }
 
@@ -124,11 +124,11 @@ static int
 display_help(int sd)
 {
   nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
-		   "Available commands:\n"
-		   "  status                  Display the status of a host or service\n"
-		   "  enable_notifications    Enable notifications for a host or host-service\n"
-		   "  disable_notifications   Disable notifications for a host or host-service\n"
-		   );
+       "Available commands:\n"
+       "  status                  Display the status of a host or service\n"
+       "  enable_notifications    Enable notifications for a host or host-service\n"
+       "  disable_notifications   Disable notifications for a host or host-service\n"
+       );
   return 200;
 }
 
@@ -203,17 +203,17 @@ schedule_downtime_for_obj(int sd, const char* obj, unsigned long int minutes)
     nsock_printf_nul(sd, "Setting %lu minutes of downtime for %s\n", minutes, obj);
 
     int retval = schedule_downtime(typedowntime,
-				   hst_name,
-				   svc_name,
-				   entry_time,
-				   author,
-				   comment_data,
-				   start_time,
-				   end_time,
-				   fixed,
-				   triggered_by,
-				   duration,
-				   &downtime_id);
+      hst_name,
+      svc_name,
+      entry_time,
+      author,
+      comment_data,
+      start_time,
+      end_time,
+      fixed,
+      triggered_by,
+      duration,
+      &downtime_id);
 
     return (retval == OK ? 200 : 400);
   }
@@ -248,10 +248,10 @@ show_status_for_service(int sd, service* svc)
 
   if (friendly_state) {
     nsock_printf_nul(sd, "%s/%s;%s;%s\n",
-		     svc->host_name,
-		     svc->description,
-		     friendly_state,
-		     output);
+      svc->host_name,
+      svc->description,
+      friendly_state,
+      output);
   } else {
     nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n", state);
   }
