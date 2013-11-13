@@ -14,25 +14,39 @@
 #include <nagios/nagios.h>
 
 /* specify event broker API version (required) */
-NEB_API_VERSION(CURRENT_NEB_API_VERSION);
+NEB_API_VERSION(CURRENT_NEB_API_VERSION)
+
+/* copied to stop the compiler bitching */
+int qh_deregister_handler(const char *name);
+int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler);
 
 static int nagioseasier_query_handler(int sd, char *buf, unsigned int len);
 static int toggle_notifications_for_obj(const char *obj, bool enable);
 static int string_equals(const char* a, const char* b);
 
 /* this function gets called when the module is loaded by the event broker */
-int nebmodule_init(int flags, char *args, nebmodule *handle)
+int
+nebmodule_init(int flags, char *args, nebmodule *handle)
 {
+  (void)flags;
+  (void)args;
+  (void)handle;
+
   return qh_register_handler("nagioseasier", "The nagioseasier query handler", 0, nagioseasier_query_handler);
 }
 
 /* this function gets called when the module is unloaded by the event broker */
-int nebmodule_deinit(int flags, int reason)
+int
+nebmodule_deinit(int flags, int reason)
 {
+  (void)flags;
+  (void)reason;
+
   return qh_deregister_handler("nagioseasier");
 }
 
-static int nagioseasier_query_handler(int sd, char *buf, unsigned int len)
+static int
+nagioseasier_query_handler(int sd, char *buf, unsigned int len)
 {
   if (len == 0 || string_equals(buf, "help")) {
     nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
@@ -62,10 +76,31 @@ static int nagioseasier_query_handler(int sd, char *buf, unsigned int len)
   return 400;
 }
 
-static int toggle_notifications_for_obj(const char *obj, bool enable)
+static void
+find_host_or_service(const char* name, service** svc, host** hst)
 {
-  host    *hst = find_host(obj);
-  service *svc = find_service(obj);
+  *svc = NULL;
+  *hst = NULL;
+
+  char* host_str    = strdup(name);
+  char* service_str = strchr(host_str, '/');
+
+  if (service_str) { /* host/service pair */
+    *service_str++ = 0;
+    *svc = find_service(host_str, service_str);
+  } else { /* host */
+    *hst = find_host(name);
+  }
+
+  free(host_str);
+}
+
+static int
+toggle_notifications_for_obj(const char *obj, bool enable)
+{
+  host* hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
 
   if (svc) {
     (enable ? enable_service_notifications : disable_service_notifications)(svc);
