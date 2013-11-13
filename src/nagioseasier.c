@@ -25,7 +25,6 @@ static int display_help(int sd);
 static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
 static int schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, const char* comment_data);
 static int show_status_for_obj(int sd, const char* obj);
-static int string_equals(const char* a, const char* b);
 
 /* this function gets called when the module is loaded by the event broker */
 int
