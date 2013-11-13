@@ -17,11 +17,13 @@
 NEB_API_VERSION(CURRENT_NEB_API_VERSION);
 
 static int nagioseasiser_query_handler(int sd, char *buf, unsigned int len);
+static int toggle_notifications_for_obj(const char *obj, bool enable);
+static int string_equals(const char* a, const char* b);
 
 /* this function gets called when the module is loaded by the event broker */
 int nebmodule_init(int flags, char *args, nebmodule *handle)
 {
-return qh_register_handler("nagioseasier", "The nagioseasier query handler", 0, nagioseasier_query_handler);
+  return qh_register_handler("nagioseasier", "The nagioseasier query handler", 0, nagioseasier_query_handler);
 }
 
 /* this function gets called when the module is unloaded by the event broker */
@@ -32,7 +34,7 @@ int nebmodule_deinit(int flags, int reason)
 
 static int nagioseasier_query_handler(int sd, char *buf, unsigned int len)
 {
-  if (len == 0 || strcmp(buf, "help") == 0) {
+  if (len == 0 || string_equals(buf, "help")) {
     nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
 		     "Available commands:\n"
 		     "  enable_notifications    Enable notifications for a host or host-service\n"
@@ -48,11 +50,11 @@ static int nagioseasier_query_handler(int sd, char *buf, unsigned int len)
     *(space++) = 0;
   }
 
-  if (!space && strcmp(buf, "enable_notifications") == 0) {
+  if (!space && string_equals(buf, "enable_notifications")) {
     return toggle_notifications_for_obj(obj, true);
   }
 
-  if (!space && strcmp(buf, "disable_notifications") == 0) {
+  if (!space && string_equals(buf, "disable_notifications")) {
     return toggle_notifications_for_obj(obj, false);
   }
 
@@ -79,4 +81,9 @@ static int toggle_notifications_for_obj(const char *obj, bool enable)
 
   nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
   return 404;
+}
+
+static int string_equals(const char* a, const char* b)
+{
+  return strcmp(a, b) == 0;
 }
