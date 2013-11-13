@@ -18,12 +18,14 @@ NEB_API_VERSION(CURRENT_NEB_API_VERSION);
 static int nagioseasiser_query_handler(int sd, char *buf, unsigned int len);
 
 /* this function gets called when the module is loaded by the event broker */
-int nebmodule_init(int flags, char *args, nebmodule *handle) {
+int nebmodule_init(int flags, char *args, nebmodule *handle)
+{
   return qh_register_handler("nagioseasier", "The nagioseasier query handler", 0, nagioseasier_query_handler);
 }
 
 /* this function gets called when the module is unloaded by the event broker */
-int nebmodule_deinit(int flags, int reason) {
+int nebmodule_deinit(int flags, int reason)
+{
   return qh_deregister_handler("nagioseasier");
 }
 
