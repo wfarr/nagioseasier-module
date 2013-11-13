@@ -11,6 +11,8 @@
 #include <nagios/nebmodules.h>
 #include <nagios/nebcallbacks.h>
 
+#include "helper.h"
+
 /* specify event broker API version (required) */
 NEB_API_VERSION(CURRENT_NEB_API_VERSION)
 
@@ -306,8 +308,3 @@ show_status_for_obj(int sd, const char* obj)
 /* { */
 /* // TODO */
 /* } */
-
-static int string_equals(const char* a, const char* b)
-{
-  return strcmp(a, b) == 0;
-}
