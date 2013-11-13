@@ -133,33 +133,53 @@ toggle_notifications_for_obj(int sd, const char* obj, bool enable)
 }
 
 static char*
-format_state_for_service_or_host(int state, host* hst, service* svc)
+format_service_state(int state)
 {
-  if (svc) {
-    switch(state) {
-    case STATE_OK:
-      return "OK";
+  switch(state) {
+  case STATE_OK:
+    return "OK";
     case STATE_WARNING:
-      return "WARNING";
-    case STATE_UNKNOWN:
-      return "UNKNOWN";
-    case STATE_CRITICAL:
-      return "CRITICAL";
-    }
+    return "WARNING";
+  case STATE_UNKNOWN:
+    return "UNKNOWN";
+  case STATE_CRITICAL:
+    return "CRITICAL";
+  default:
+    return NULL;
+  }
+}
+
+static void
+show_status_for_service(int sd, service* svc)
+{
+  int   state          = svc->current_state;
+  char* output         = svc->plugin_output;
+  char* friendly_state = format_service_state(state);
+
+  if (friendly_state) {
+    nsock_printf_nul(sd, "%s/%s => %s: %s\n",
+		     svc->host_name,
+		     svc->description,
+		     friendly_state,
+		     output);
+  } else {
+    nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n", state);
   }
 
-  if (hst) {
-    switch(state) {
-    case STATE_UP:
-      return "UP";
-    case STATE_DOWN:
-      return "DOWN";
-    case STATE_UNREACHABLE:
-      return "UNREACHABLE";
-    }
+  return;
+}
+
+static void
+show_status_for_host(int sd, host* hst)
+{
+  servicesmember* svc_member = hst->services;
+
+  while (svc_member) {
+    show_status_for_service(sd, svc_member->service_ptr);
+    svc_member = svc_member->next;
   }
 
-  return NULL;
+  return;
 }
 
 static int
@@ -169,35 +189,18 @@ show_status_for_obj(int sd, const char* obj)
   service* svc;
   find_host_or_service(obj, &hst, &svc);
 
-  int   state;
-  char* output;
-
   if (svc) {
-    state = svc->current_state;
-    output = svc->plugin_output;
-  } else if (hst) {
-    state = hst->current_state;
-    output = hst->plugin_output;
-  } else {
-    nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
-    return 404;
-  }
-
-  char* friendly_state = format_state_for_service_or_host(state, hst, svc);
-
-  if (friendly_state) {
-
-    nsock_printf_nul(sd, "%s => %s: %s\n",
-		     obj,
-		     friendly_state,
-		     output);
+    show_status_for_service(sd, svc);
     return 200;
-
   }
 
-  nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n",
-		   state);
-  return 400;
+  if (hst) {
+    show_status_for_host(sd, hst);
+    return 200;
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
+  return 404;
 }
 
 /* static int */
