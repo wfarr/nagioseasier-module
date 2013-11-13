@@ -96,13 +96,12 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 
   if (obj && string_equals(action, "schedule_downtime")) {
     unsigned long minutes = 15L;
+    char* comment_data;
 
     // assume the next argument is number of minutes
     if (rest) {
-      char *garbage;
-
-      if ((garbage = memchr(rest, ' ', strlen(rest)))) {
-        *(garbage++) = 0;
+      if ((comment_data = strchr(rest, ' '))) {
+        *(comment_data++) = 0;
       }
 
       minutes = strtoul(rest, NULL, 10);
@@ -112,7 +111,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
       }
     }
 
-    return schedule_downtime_for_obj(sd, obj, minutes);
+    return schedule_downtime_for_obj(sd, obj, minutes, comment_data);
   }
 
   nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
@@ -175,7 +174,7 @@ toggle_notifications_for_obj(int sd, const char* obj, bool enable)
 }
 
 static int
-schedule_downtime_for_obj(int sd, const char* obj, unsigned long int minutes)
+schedule_downtime_for_obj(int sd, const char* obj, unsigned long int minutes, const char* comment_data)
 {
 
   host*    hst;
@@ -188,8 +187,7 @@ schedule_downtime_for_obj(int sd, const char* obj, unsigned long int minutes)
     char*         hst_name     = (svc ? svc->host_name : hst->name);
     char*         svc_name     = (svc ? svc->description : NULL);
     time_t        entry_time   = time(NULL);
-    char*         author       = "nagioseasier";
-    char*         comment_data = "lol this is a test";
+    const char*   author       = "nagioseasier";
     time_t        start_time   = time(NULL);
     time_t        end_time     = 0L; /* only used for fixed downtime, TODO some other time */
     int           fixed        = 0;
