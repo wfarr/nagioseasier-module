@@ -27,7 +27,7 @@ int qh_register_handler(const char* name, const char* description, unsigned int 
 static int nagioseasier_query_handler(int sd, char* buf, unsigned int len);
 static int display_help(int sd);
 static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
-static int schedule_downtime_for_obj(int sd, const char* obj, unsigned long int minutes);
+static int schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes);
 static int show_status_for_obj(int sd, const char* obj);
 static int string_equals(const char* a, const char* b);
 
@@ -174,7 +174,7 @@ toggle_notifications_for_obj(int sd, const char* obj, bool enable)
 }
 
 static int
-schedule_downtime_for_obj(int sd, const char* obj, unsigned long int minutes, const char* comment_data)
+schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, const char* comment_data)
 {
 
   host*    hst;
