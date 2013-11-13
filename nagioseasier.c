@@ -102,7 +102,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
       char *garbage;
 
       if ((garbage = memchr(rest, ' ', strlen(rest)))) {
-	*(garbage++) = 0;
+        *(garbage++) = 0;
       }
 
       minutes = strtoul(rest, NULL, 10);
