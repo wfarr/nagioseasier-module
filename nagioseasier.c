@@ -16,7 +16,7 @@
 /* specify event broker API version (required) */
 NEB_API_VERSION(CURRENT_NEB_API_VERSION);
 
-static int nagioseasiser_query_handler(int sd, char *buf, unsigned int len);
+static int nagioseasier_query_handler(int sd, char *buf, unsigned int len);
 static int toggle_notifications_for_obj(const char *obj, bool enable);
 static int string_equals(const char* a, const char* b);
 
