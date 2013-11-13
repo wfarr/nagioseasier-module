@@ -11,12 +11,16 @@
 #include <nagios/nebmodules.h>
 #include <nagios/nebcallbacks.h>
 
+
+/* set NSCGI because statusdata.h won't load our types otherwise */
+#define NSCGI
+#include <nagios/statusdata.h>
+#undef NSCGI
+
 /*
   #include "../include/nebstructs.h"
   #include "../include/broker.h"
 */
-
-
 
 /* specify event broker API version (required) */
 NEB_API_VERSION(CURRENT_NEB_API_VERSION)
@@ -24,11 +28,13 @@ NEB_API_VERSION(CURRENT_NEB_API_VERSION)
 /* copied to stop the compiler bitching */
 int qh_deregister_handler(const char* name);
 int qh_register_handler(const char* name, const char* description, unsigned int options, qh_handler handler);
-hoststatus* find_hoststatus(char* host_name)
-servicestatus* find_servicestatus(char* host_name, char* svc_desc)
+
+hoststatus* find_hoststatus(char* host_name);
+servicestatus* find_servicestatus(char* host_name, char* svc_desc);
 
 static int nagioseasier_query_handler(int sd, char* buf, unsigned int len);
 static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
+static int show_status_for_obj(int sd, const char* obj);
 static int string_equals(const char* a, const char* b);
 
 /* this function gets called when the module is loaded by the event broker */
@@ -55,6 +61,7 @@ nebmodule_deinit(int flags, int reason)
 static int
 nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 {
+  fprintf(stderr, "nagioseasier_query_handler called\n");
   if (len == 0 || string_equals(buf, "help")) {
     nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
 		     "Available commands:\n"
@@ -74,6 +81,10 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
   if (!space && string_equals(buf, "yolo")) {
     nsock_printf_nul(sd, "yolochocinco!!!!!!\n");
     return 420;
+  }
+
+  if (!space && (string_equals(buf, "status"))) {
+    return show_status_for_obj(sd, obj);
   }
 
   if (!space && (string_equals(buf, "enable_notifications") || string_equals(buf, "unmute"))) {
@@ -133,50 +144,35 @@ toggle_notifications_for_obj(int sd, const char* obj, bool enable)
 static char*
 format_status_for_service_or_host(int status, host* hst, service* svc)
 {
-  char* friendly_status = NULL;
-
   if (svc) {
     switch(status) {
     case SERVICE_PENDING:
-      friendly_status = "PENDING";
-      break;
+      return "PENDING";
     case SERVICE_OK:
-      friendly_status = "OK";
-      break;
+      return "OK";
     case SERVICE_WARNING:
-      friendly_status = "WARNING";
-      break;
+      return "WARNING";
     case SERVICE_UNKNOWN:
-      friendly_status = "UNKNOWN";
-      break;
+      return "UNKNOWN";
     case SERVICE_CRITICAL:
-      friendly_status = "CRITICAL";
-      break;
-    default:
-      break;
+      return "CRITICAL";
     }
   }
 
   if (hst) {
     switch(status) {
     case HOST_PENDING:
-      friendly_status = "PENDING";
-      break;
+      return "PENDING";
     case SD_HOST_UP:
-      friendly_status = "UP";
-      break;
+      return "UP";
     case SD_HOST_DOWN:
-      friendly_status = "DOWN";
-      break;
+      return "DOWN";
     case SD_HOST_UNREACHABLE:
-      friendly_status = "UNREACHABLE";
-      break;
-    case default:
-      break;
+      return "UNREACHABLE";
     }
   }
 
-  return friendly_status
+  return NULL;
 }
 
 static int
@@ -186,7 +182,7 @@ show_status_for_obj(int sd, const char* obj)
   service* svc;
   find_host_or_service(obj, &hst, &svc);
 
-  int   status = NULL;
+  int   status;
   char* output = NULL;
 
   if (svc) {
@@ -195,10 +191,10 @@ show_status_for_obj(int sd, const char* obj)
     output = svc_stat->plugin_output;
   }
 
-  if (host) {
-    hoststatus* host_stat = find_hoststatus(host->display_name);
+  if (hst) {
+    hoststatus* host_stat = find_hoststatus(hst->display_name);
     status = host_stat->status;
-    output = svc_stat->plugin_output;
+    output = host_stat->plugin_output;
   }
 
   char* friendly_status = format_status_for_service_or_host(status, hst, svc);
@@ -209,13 +205,12 @@ show_status_for_obj(int sd, const char* obj)
 		     obj,
 		     friendly_status,
 		     output);
-    free(friendly_status);
     return 200;
 
   } else {
 
     nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n",
-		     svc_stat->status);
+		     status);
     return 403;
 
   }
@@ -224,35 +219,35 @@ show_status_for_obj(int sd, const char* obj)
   return 404;
 }
 
-static int
-acknowledge_obj_problem(int sd, const char *obj)
-{
-// TODO
-}
+/* static int */
+/* acknowledge_obj_problem(int sd, const char *obj) */
+/* { */
+/* // TODO */
+/* } */
 
-static int
-unacknowledge_obj_problem(int sd, const char* obj)
-{
-// TODO
-}
+/* static int */
+/* unacknowledge_obj_problem(int sd, const char* obj) */
+/* { */
+/* // TODO */
+/* } */
 
-static int
-schedule_downtime_for_obj(int sd, const char *obj, int minutes)
-{
-// TODO
-}
+/* static int */
+/* schedule_downtime_for_obj(int sd, const char *obj, int minutes) */
+/* { */
+/* // TODO */
+/* } */
 
-static int
-show_problems(int sd, const char *obj)
-{
-// TODO
-}
+/* static int */
+/* show_problems(int sd, const char *obj) */
+/* { */
+/* // TODO */
+/* } */
 
-static int
-show_muted(int sd)
-{
-// TODO
-}
+/* static int */
+/* show_muted(int sd) */
+/* { */
+/* // TODO */
+/* } */
 
 static int string_equals(const char* a, const char* b)
 {
