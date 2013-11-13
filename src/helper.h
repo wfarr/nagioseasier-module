@@ -1,6 +1,6 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-static int string_equals(const char* a, const char* b);
+int nez_string_equals(const char* a, const char* b);
 
 #endif

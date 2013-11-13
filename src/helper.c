@@ -2,8 +2,8 @@
 
 #include "helper.h"
 
-static int
-string_equals(const char* a, const char* b)
+int
+nez_string_equals(const char* a, const char* b)
 {
   return strcmp(a, b) == 0;
 }
