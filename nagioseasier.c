@@ -69,15 +69,15 @@ nagioseasier_query_handler(int sd, char *buf, unsigned int len)
   }
 
   if (!space && string_equals(buf, "yolo")) {
-    nsock_printf_nul(sd, "yolochocinco!!!!!!");
+    nsock_printf_nul(sd, "yolochocinco!!!!!!\n");
     return 420;
   }
 
-  if (!space && string_equals(buf, "enable_notifications")) {
+  if (!space && (string_equals(buf, "enable_notifications") || string_equals(buf, "unmute"))) {
     return toggle_notifications_for_obj(sd, obj, true);
   }
 
-  if (!space && string_equals(buf, "disable_notifications")) {
+  if (!space && (string_equals(buf, "disable_notifications") || string_equals(buf, "mute"))) {
     return toggle_notifications_for_obj(sd, obj, false);
   }
 
@@ -113,18 +113,54 @@ toggle_notifications_for_obj(int sd, const char *obj, bool enable)
 
   if (svc) {
     (enable ? enable_service_notifications : disable_service_notifications)(svc);
-    nsock_printf_nul(sd, "NOTIFICATIONS %sABLED FOR SERVICE: %s/%s", enable ? "EN" : "DIS", svc->host_name, svc->display_name);
+    nsock_printf_nul(sd, "NOTIFICATIONS %sABLED FOR SERVICE: %s/%s\n", enable ? "EN" : "DIS", svc->host_name, svc->display_name);
     return 200;
   }
 
   if (hst) {
     (enable ? enable_host_notifications : disable_host_notifications)(hst);
-    nsock_printf_nul(sd, "NOTIFICATIONS %sABLED FOR HOST: %s", enable ? "EN" : "DIS", hst->display_name);
+    nsock_printf_nul(sd, "NOTIFICATIONS %sABLED FOR HOST: %s\n", enable ? "EN" : "DIS", hst->display_name);
     return 200;
   }
 
   nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
   return 404;
+}
+
+static int
+show_status_for_obj(int sd, const char *obj)
+{
+// TODO
+}
+
+static int
+acknowledge_obj_problem(int sd, const char *obj)
+{
+// TODO
+}
+
+static int
+unacknowledge_obj_problem(int sd, const char* obj)
+{
+// TODO
+}
+
+static int
+schedule_downtime_for_obj(int sd, const char *obj, int minutes)
+{
+// TODO
+}
+
+static int
+show_problems(int sd, const char *obj)
+{
+// TODO
+}
+
+static int
+show_muted(int sd)
+{
+// TODO
 }
 
 static int string_equals(const char* a, const char* b)
