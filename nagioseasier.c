@@ -24,6 +24,7 @@ int qh_deregister_handler(const char* name);
 int qh_register_handler(const char* name, const char* description, unsigned int options, qh_handler handler);
 
 static int nagioseasier_query_handler(int sd, char* buf, unsigned int len);
+static int display_help(int sd);
 static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
 static int show_status_for_obj(int sd, const char* obj);
 static int string_equals(const char* a, const char* b);
@@ -52,43 +53,53 @@ nebmodule_deinit(int flags, int reason)
 static int
 nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 {
-  fprintf(stderr, "nagioseasier_query_handler called\n");
-  if (len == 0 || string_equals(buf, "help")) {
-    nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
-		     "Available commands:\n"
-		     "  status                  Display the status of a host or service\n"
-		     "  enable_notifications    Enable notifications for a host or host-service\n"
-		     "  disable_notifications   Disable notifications for a host or host-service\n"
-		     );
-    return 200;
+  if (len == 0) {
+    return display_help(sd);
   }
 
-  const char* obj = "ops-breakin1-pe1-prd/last_puppet_run";
-  char* space;
+  char* action = buf;
+  char* obj;
 
-  if ((space = memchr(buf, ' ', len))) {
-    *(space++) = 0;
+  if ((obj = memchr(buf, ' ', len))) {
+    *(obj++) = 0;
   }
 
-  if (!space && string_equals(buf, "yolo")) {
+  if (!obj && string_equals(action, "help")) {
+    return display_help(sd);
+  }
+
+  if (!obj && string_equals(action, "yolo")) {
     nsock_printf_nul(sd, "yolochocinco!!!!!!\n");
-    return 420;
+    return 420;     // easter egg
   }
 
-  if (!space && (string_equals(buf, "status"))) {
+  if (obj && (string_equals(action, "status"))) {
     return show_status_for_obj(sd, obj);
   }
 
-  if (!space && (string_equals(buf, "enable_notifications") || string_equals(buf, "unmute"))) {
+  if (obj && (string_equals(action, "enable_notifications") || string_equals(action, "unmute"))) {
     return toggle_notifications_for_obj(sd, obj, true);
   }
 
-  if (!space && (string_equals(buf, "disable_notifications") || string_equals(buf, "mute"))) {
+  if (obj && (string_equals(action, "disable_notifications") || string_equals(action, "mute"))) {
     return toggle_notifications_for_obj(sd, obj, false);
   }
 
   nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
   return 400;
+}
+
+
+static int
+display_help(int sd)
+{
+  nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
+		   "Available commands:\n"
+		   "  status                  Display the status of a host or service\n"
+		   "  enable_notifications    Enable notifications for a host or host-service\n"
+		   "  disable_notifications   Disable notifications for a host or host-service\n"
+		   );
+  return 200;
 }
 
 static void
