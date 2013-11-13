@@ -183,18 +183,31 @@ show_status_for_obj(int sd, const char* obj)
   find_host_or_service(obj, &hst, &svc);
 
   int   status;
-  char* output = NULL;
+  char* output;
 
   if (svc) {
-    servicestatus* svc_stat = find_servicestatus(svc->host_name, svc->display_name);
+    servicestatus* svc_stat = find_servicestatus(svc->host_name, svc->description);
+
+    if (!svc_stat) {
+      nsock_printf_nul(sd, "find_servicestatus() failed for %s/%s\n", svc->host_name, svc->description);
+      return 400;
+    }
+
     status = svc_stat->status;
     output = svc_stat->plugin_output;
-  }
+  } else if (hst) {
+    hoststatus* host_stat = find_hoststatus(hst->name);
 
-  if (hst) {
-    hoststatus* host_stat = find_hoststatus(hst->display_name);
+    if (!host_stat) {
+      nsock_printf_nul(sd, "find_hoststatus() failed for %s\n", hst->name);
+      return 400;
+    }
+
     status = host_stat->status;
     output = host_stat->plugin_output;
+  } else {
+    nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
+    return 404;
   }
 
   char* friendly_status = format_status_for_service_or_host(status, hst, svc);
@@ -207,16 +220,11 @@ show_status_for_obj(int sd, const char* obj)
 		     output);
     return 200;
 
-  } else {
-
-    nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n",
-		     status);
-    return 403;
-
   }
 
-  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
-  return 404;
+  nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n",
+		   status);
+  return 400;
 }
 
 /* static int */
