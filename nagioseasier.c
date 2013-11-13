@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* nagios shit */
 #include <nagios/common.h>
 #include <nagios/config.h>
 #include <nagios/downtime.h>
@@ -12,15 +11,10 @@
 #include <nagios/nebmodules.h>
 #include <nagios/nebcallbacks.h>
 
-/*
-  #include "../include/nebstructs.h"
-  #include "../include/broker.h"
-*/
-
 /* specify event broker API version (required) */
 NEB_API_VERSION(CURRENT_NEB_API_VERSION)
 
-/* copied to stop the compiler bitching */
+/* prototype the query handler functions to keep the compiler happy */
 int qh_deregister_handler(const char* name);
 int qh_register_handler(const char* name, const char* description, unsigned int options, qh_handler handler);
 
@@ -95,7 +89,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
   }
 
   if (obj && string_equals(action, "schedule_downtime")) {
-    unsigned long minutes = 15L;
+    unsigned long minutes;
     char* comment_data;
 
     // assume the next argument is number of minutes
@@ -105,11 +99,9 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
       }
 
       minutes = strtoul(rest, NULL, 10);
-
-      if (minutes <= 0) {
-        minutes = 15L;
-      }
     }
+
+    minutes = (minutes > 1 ? minutes : 15L);
 
     return schedule_downtime_for_obj(sd, obj, minutes, comment_data);
   }
@@ -299,12 +291,6 @@ show_status_for_obj(int sd, const char* obj)
 
 /* static int */
 /* unacknowledge_obj_problem(int sd, const char* obj) */
-/* { */
-/* // TODO */
-/* } */
-
-/* static int */
-/* schedule_downtime_for_obj(int sd, const char *obj, int minutes) */
 /* { */
 /* // TODO */
 /* } */
