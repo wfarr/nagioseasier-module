@@ -228,7 +228,7 @@ format_service_state(int state)
   switch(state) {
   case STATE_OK:
     return "OK";
-    case STATE_WARNING:
+  case STATE_WARNING:
     return "WARNING";
   case STATE_UNKNOWN:
     return "UNKNOWN";
