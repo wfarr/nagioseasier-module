@@ -1,6 +1,12 @@
-CFLAGS=-Wall -Wextra -pedantic -std=c99 -Werror -D_XOPEN_SOURCE
+CFLAGS=-Wall -Wextra -pedantic -std=c99 -Werror -D_XOPEN_SOURCE=500 -fPIC -g
 
-all: nagioseasier.o
+SONAME=nagioseasier.so
+OBJECTS=nagioseasier.o
+
+all: $(SONAME)
+
+$(SONAME): $(OBJECTS)
+	$(CC) -shared $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 clean:
-	rm -f nagioseasier.o
+	rm -f $(SONAME) $(OBJECTS)
