@@ -158,7 +158,7 @@ show_status_for_service(int sd, service* svc)
   char* friendly_state = format_service_state(state);
 
   if (friendly_state) {
-    nsock_printf_nul(sd, "%s/%s => %s: %s\n",
+    nsock_printf_nul(sd, "%s/%s;%s;%s\n",
 		     svc->host_name,
 		     svc->description,
 		     friendly_state,
