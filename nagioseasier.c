@@ -17,20 +17,23 @@
 */
 
 
+
 /* specify event broker API version (required) */
 NEB_API_VERSION(CURRENT_NEB_API_VERSION)
 
 /* copied to stop the compiler bitching */
-int qh_deregister_handler(const char *name);
-int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler);
+int qh_deregister_handler(const char* name);
+int qh_register_handler(const char* name, const char* description, unsigned int options, qh_handler handler);
+hoststatus* find_hoststatus(char* host_name)
+servicestatus* find_servicestatus(char* host_name, char* svc_desc)
 
-static int nagioseasier_query_handler(int sd, char *buf, unsigned int len);
-static int toggle_notifications_for_obj(int sd, const char *obj, bool enable);
+static int nagioseasier_query_handler(int sd, char* buf, unsigned int len);
+static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
 static int string_equals(const char* a, const char* b);
 
 /* this function gets called when the module is loaded by the event broker */
 int
-nebmodule_init(int flags, char *args, nebmodule *handle)
+nebmodule_init(int flags, char* args, nebmodule* handle)
 {
   (void)flags;
   (void)args;
@@ -50,7 +53,7 @@ nebmodule_deinit(int flags, int reason)
 }
 
 static int
-nagioseasier_query_handler(int sd, char *buf, unsigned int len)
+nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 {
   if (len == 0 || string_equals(buf, "help")) {
     nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
@@ -61,8 +64,8 @@ nagioseasier_query_handler(int sd, char *buf, unsigned int len)
     return 200;
   }
 
-  const char *obj = "ops-breakin1-pe1-prd/last_puppet_run";
-  char *space;
+  const char* obj = "ops-breakin1-pe1-prd/last_puppet_run";
+  char* space;
 
   if ((space = memchr(buf, ' ', len))) {
     *(space++) = 0;
@@ -105,9 +108,9 @@ find_host_or_service(const char* name, host** hst, service** svc)
 }
 
 static int
-toggle_notifications_for_obj(int sd, const char *obj, bool enable)
+toggle_notifications_for_obj(int sd, const char* obj, bool enable)
 {
-  host* hst;
+  host*    hst;
   service* svc;
   find_host_or_service(obj, &hst, &svc);
 
@@ -128,8 +131,42 @@ toggle_notifications_for_obj(int sd, const char *obj, bool enable)
 }
 
 static int
-show_status_for_obj(int sd, const char *obj)
+show_status_for_obj(int sd, const char* obj)
 {
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  if (svc) {
+    servicestatus* svc_stat = find_servicestatus(svc->host_name, svc->display_name);
+
+    char* friendly_status = NULL;
+
+    switch(svc_stat->status) {
+      case SERVICE_PENDING:
+        friendly_status = "PENDING";
+      case SERVICE_OK:
+        friendly_status = "OK";
+      case SERVICE_WARNING:
+        friendly_status = "WARNING";
+      case SERVICE_UNKNOWN:
+        friendly_status = "UNKNOWN";
+      case SERVICE_CRITICAL:
+        friendly_status = "CRITICAL";
+      default:
+        nsock_printf_nul(sd, "Somehow Nagios thinks this service state is something invalid: %i\n", svc_stat->status);
+        return 403;
+    }
+
+    nsock_printf_nul(sd, "%s/%s => %s: %s\n", svc->host_name, svc_stat->description, friendly_status, svc_stat->plugin_output);
+    return 200;
+  }
+
+  if (host) {
+    hoststatus* host_stat = find_hoststatus(host->display_name);
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
 // TODO
 }
 
