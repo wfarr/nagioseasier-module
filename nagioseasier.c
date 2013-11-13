@@ -63,13 +63,13 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
   char* obj;
 
   /* separate our action and obj */
-  if ((obj = memchr(buf, ' ', len))) {
+  if ((obj = strchr(buf, ' '))) {
     *(obj++) = 0;
   }
 
   /* shove the rest of the input into rest, leave obj alone */
   char* rest;
-  if ((rest = memchr(obj, ' ', strlen(obj)))) {
+  if ((rest = strchr(obj, ' '))) {
     *(rest++) = 0;
   }
 
