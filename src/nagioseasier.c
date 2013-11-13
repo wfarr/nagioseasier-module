@@ -23,7 +23,7 @@ int qh_register_handler(const char* name, const char* description, unsigned int 
 static int nagioseasier_query_handler(int sd, char* buf, unsigned int len);
 static int display_help(int sd);
 static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
-static int schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, const char* comment_data);
+static int schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* comment_data);
 static int show_status_for_obj(int sd, const char* obj);
 
 /* this function gets called when the module is loaded by the event broker */
@@ -221,7 +221,7 @@ schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* 
     char*         hst_name     = (svc ? svc->host_name : hst->name);
     char*         svc_name     = (svc ? svc->description : NULL);
     time_t        entry_time   = time(NULL);
-    const char*   author       = "nagioseasier";
+    char*         author       = "nagioseasier";
     time_t        start_time   = time(NULL);
     time_t        end_time     = 0L; /* only used for fixed downtime, TODO some other time */
     int           fixed        = 0;
