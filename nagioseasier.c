@@ -3,29 +3,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* nagios shit */
 #include <nagios/common.h>
 #include <nagios/config.h>
+#include <nagios/downtime.h>
 #include <nagios/objects.h>
 #include <nagios/nagios.h>
 #include <nagios/nebmodules.h>
 #include <nagios/nebcallbacks.h>
 
-/*
-  #include "../include/nebstructs.h"
-  #include "../include/broker.h"
-*/
-
 /* specify event broker API version (required) */
 NEB_API_VERSION(CURRENT_NEB_API_VERSION)
 
-/* copied to stop the compiler bitching */
+/* prototype the query handler functions to keep the compiler happy */
 int qh_deregister_handler(const char* name);
 int qh_register_handler(const char* name, const char* description, unsigned int options, qh_handler handler);
 
 static int nagioseasier_query_handler(int sd, char* buf, unsigned int len);
 static int display_help(int sd);
 static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
+static int schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, const char* comment_data);
 static int show_status_for_obj(int sd, const char* obj);
 static int string_equals(const char* a, const char* b);
 
@@ -60,8 +56,15 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
   char* action = buf;
   char* obj;
 
-  if ((obj = memchr(buf, ' ', len))) {
+  /* separate our action and obj */
+  if ((obj = strchr(buf, ' '))) {
     *(obj++) = 0;
+  }
+
+  /* shove the rest of the input into rest, leave obj alone */
+  char* rest;
+  if ((rest = strchr(obj, ' '))) {
+    *(rest++) = 0;
   }
 
   if (!obj && string_equals(action, "help")) {
@@ -85,6 +88,24 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
     return toggle_notifications_for_obj(sd, obj, false);
   }
 
+  if (obj && string_equals(action, "schedule_downtime")) {
+    unsigned long minutes;
+    char* comment_data;
+
+    // assume the next argument is number of minutes
+    if (rest) {
+      if ((comment_data = strchr(rest, ' '))) {
+        *(comment_data++) = 0;
+      }
+
+      minutes = strtoul(rest, NULL, 10);
+    }
+
+    minutes = (minutes > 1 ? minutes : 15L);
+
+    return schedule_downtime_for_obj(sd, obj, minutes, comment_data);
+  }
+
   nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
   return 400;
 }
@@ -94,11 +115,11 @@ static int
 display_help(int sd)
 {
   nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
-		   "Available commands:\n"
-		   "  status                  Display the status of a host or service\n"
-		   "  enable_notifications    Enable notifications for a host or host-service\n"
-		   "  disable_notifications   Disable notifications for a host or host-service\n"
-		   );
+       "Available commands:\n"
+       "  status                  Display the status of a host or service\n"
+       "  enable_notifications    Enable notifications for a host or host-service\n"
+       "  disable_notifications   Disable notifications for a host or host-service\n"
+       );
   return 200;
 }
 
@@ -144,13 +165,60 @@ toggle_notifications_for_obj(int sd, const char* obj, bool enable)
   return 404;
 }
 
+static int
+schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, const char* comment_data)
+{
+
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  if (hst || svc) {
+
+    int           typedowntime = (svc ? SERVICE_DOWNTIME : HOST_DOWNTIME);
+    char*         hst_name     = (svc ? svc->host_name : hst->name);
+    char*         svc_name     = (svc ? svc->description : NULL);
+    time_t        entry_time   = time(NULL);
+    const char*   author       = "nagioseasier";
+    time_t        start_time   = time(NULL);
+    time_t        end_time     = 0L; /* only used for fixed downtime, TODO some other time */
+    int           fixed        = 0;
+    unsigned long triggered_by = 0L; /* assume triggered by no obj in system? */
+    unsigned long duration     = minutes * 60L; /* assuming duration is seconds */
+    unsigned long downtime_id  = 0L;
+
+
+    end_time = start_time + duration;
+
+    nsock_printf_nul(sd, "Setting %lu minutes of downtime for %s\n", minutes, obj);
+
+    int retval = schedule_downtime(typedowntime,
+      hst_name,
+      svc_name,
+      entry_time,
+      author,
+      comment_data,
+      start_time,
+      end_time,
+      fixed,
+      triggered_by,
+      duration,
+      &downtime_id);
+
+    return (retval == OK ? 200 : 400);
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
+  return 404;
+}
+
 static char*
 format_service_state(int state)
 {
   switch(state) {
   case STATE_OK:
     return "OK";
-    case STATE_WARNING:
+  case STATE_WARNING:
     return "WARNING";
   case STATE_UNKNOWN:
     return "UNKNOWN";
@@ -170,10 +238,10 @@ show_status_for_service(int sd, service* svc)
 
   if (friendly_state) {
     nsock_printf_nul(sd, "%s/%s;%s;%s\n",
-		     svc->host_name,
-		     svc->description,
-		     friendly_state,
-		     output);
+      svc->host_name,
+      svc->description,
+      friendly_state,
+      output);
   } else {
     nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n", state);
   }
@@ -223,12 +291,6 @@ show_status_for_obj(int sd, const char* obj)
 
 /* static int */
 /* unacknowledge_obj_problem(int sd, const char* obj) */
-/* { */
-/* // TODO */
-/* } */
-
-/* static int */
-/* schedule_downtime_for_obj(int sd, const char *obj, int minutes) */
 /* { */
 /* // TODO */
 /* } */
