@@ -48,6 +48,80 @@ nebmodule_deinit(int flags, int reason)
 }
 
 static int
+nez_cmd_help(int sd, char* object, char* rest)
+{
+  (void)object;
+  (void)rest;
+  return display_help(sd);
+}
+
+static int
+nez_cmd_frenchman(int sd, char* object, char* rest)
+{
+  (void)object;
+  (void)rest;
+  nsock_printf_nul(sd, "yolochocinco!!!!!!\n");
+  return 420;     // easter egg
+}
+
+static int
+nez_cmd_status(int sd, char* object, char* rest)
+{
+  (void)rest;
+  return show_status_for_obj(sd, object);
+}
+
+static int
+nez_cmd_enable_notifications(int sd, char* object, char* rest)
+{
+  (void)rest;
+  return toggle_notifications_for_obj(sd, object, true);
+}
+
+static int
+nez_cmd_disable_notifications(int sd, char* object, char* rest)
+{
+  (void)rest;
+  return toggle_notifications_for_obj(sd, object, false);
+}
+
+static int
+nez_cmd_schedule_downtime(int sd, char* object, char* rest)
+{
+  unsigned long minutes;
+  char* comment_data;
+
+  // assume the next argument is number of minutes
+  if (rest) {
+    if ((comment_data = strchr(rest, ' '))) {
+      *(comment_data++) = 0;
+    }
+
+    minutes = strtoul(rest, NULL, 10);
+  }
+
+  minutes = (minutes > 1 ? minutes : 15L);
+
+  return schedule_downtime_for_obj(sd, object, minutes, comment_data);
+}
+
+typedef struct {
+  const char* name;
+  int(*handler)(int sd, char* object, char* rest);
+}
+nez_command_t;
+
+static nez_command_t
+commands[] = {
+  { "help", nez_cmd_help },
+  { "yolo", nez_cmd_frenchman },
+  { "status", nez_cmd_status },
+  { "enable_notifications", nez_cmd_enable_notifications },
+  { "disable_notifications", nez_cmd_disable_notifications },
+  { "schedule_downtime", nez_cmd_schedule_downtime },
+};
+
+static int
 nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 {
   if (len == 0) {
@@ -68,43 +142,10 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
     *(rest++) = 0;
   }
 
-  if (!obj && string_equals(action, "help")) {
-    return display_help(sd);
-  }
-
-  if (!obj && string_equals(action, "yolo")) {
-    nsock_printf_nul(sd, "yolochocinco!!!!!!\n");
-    return 420;     // easter egg
-  }
-
-  if (obj && (string_equals(action, "status"))) {
-    return show_status_for_obj(sd, obj);
-  }
-
-  if (obj && (string_equals(action, "enable_notifications") || string_equals(action, "unmute"))) {
-    return toggle_notifications_for_obj(sd, obj, true);
-  }
-
-  if (obj && (string_equals(action, "disable_notifications") || string_equals(action, "mute"))) {
-    return toggle_notifications_for_obj(sd, obj, false);
-  }
-
-  if (obj && string_equals(action, "schedule_downtime")) {
-    unsigned long minutes;
-    char* comment_data;
-
-    // assume the next argument is number of minutes
-    if (rest) {
-      if ((comment_data = strchr(rest, ' '))) {
-        *(comment_data++) = 0;
-      }
-
-      minutes = strtoul(rest, NULL, 10);
+  for (size_t i = 0; i < countof(commands); i++) {
+    if (nez_string_equals(commands[i].name, action)) {
+      return commands[i].handler(sd, obj, rest);
     }
-
-    minutes = (minutes > 1 ? minutes : 15L);
-
-    return schedule_downtime_for_obj(sd, obj, minutes, comment_data);
   }
 
   nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
@@ -167,7 +208,7 @@ toggle_notifications_for_obj(int sd, const char* obj, bool enable)
 }
 
 static int
-schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, const char* comment_data)
+schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* comment_data)
 {
 
   host*    hst;
