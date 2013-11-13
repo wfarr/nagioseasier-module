@@ -56,6 +56,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
   if (len == 0 || string_equals(buf, "help")) {
     nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
 		     "Available commands:\n"
+		     "  status                  Display the status of a host or service\n"
 		     "  enable_notifications    Enable notifications for a host or host-service\n"
 		     "  disable_notifications   Disable notifications for a host or host-service\n"
 		     );
@@ -86,7 +87,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
     return toggle_notifications_for_obj(sd, obj, false);
   }
 
-  nsock_printf_nul(sd, "UNKNOWN COMMAND");
+  nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
   return 400;
 }
 
