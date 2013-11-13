@@ -6,6 +6,7 @@
 /* nagios shit */
 #include <nagios/common.h>
 #include <nagios/config.h>
+#include <nagios/downtime.h>
 #include <nagios/objects.h>
 #include <nagios/nagios.h>
 #include <nagios/nebmodules.h>
@@ -26,6 +27,7 @@ int qh_register_handler(const char* name, const char* description, unsigned int 
 static int nagioseasier_query_handler(int sd, char* buf, unsigned int len);
 static int display_help(int sd);
 static int toggle_notifications_for_obj(int sd, const char* obj, bool enable);
+static int schedule_downtime_for_obj(int sd, const char* obj, unsigned long int minutes);
 static int show_status_for_obj(int sd, const char* obj);
 static int string_equals(const char* a, const char* b);
 
@@ -59,9 +61,16 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 
   char* action = buf;
   char* obj;
+  char* rest;
 
+  /* separate our action and obj */
   if ((obj = memchr(buf, ' ', len))) {
     *(obj++) = 0;
+  }
+
+  /* shove the rest of the input into rest, leave obj alone */
+  if ((rest = memchr(obj, ' ', strlen(obj)))) {
+    *(rest++) = 0;
   }
 
   if (!obj && string_equals(action, "help")) {
@@ -83,6 +92,27 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 
   if (obj && (string_equals(action, "disable_notifications") || string_equals(action, "mute"))) {
     return toggle_notifications_for_obj(sd, obj, false);
+  }
+
+  if (obj && (string_equals(action, "schedule_downtime"))) {
+    unsigned long int minutes = 15L;
+
+    // assume the next argument is number of minutes
+    if (rest) {
+      char *garbage;
+
+      if ((garbage = memchr(rest, ' ', strlen(rest)))) {
+	*(garbage++) = 0;
+      }
+
+      minutes = strtoul(rest, NULL, 10);
+
+      if (minutes <= 0) {
+	minutes = 15L;
+      }
+    }
+
+    return schedule_downtime_for_obj(sd, obj, minutes);
   }
 
   nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
@@ -138,6 +168,54 @@ toggle_notifications_for_obj(int sd, const char* obj, bool enable)
     (enable ? enable_host_notifications : disable_host_notifications)(hst);
     nsock_printf_nul(sd, "NOTIFICATIONS %sABLED FOR HOST: %s\n", enable ? "EN" : "DIS", hst->display_name);
     return 200;
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
+  return 404;
+}
+
+static int
+schedule_downtime_for_obj(int sd, const char* obj, unsigned long int minutes)
+{
+
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  if (hst || svc) {
+
+    int           typedowntime = (svc ? SERVICE_DOWNTIME : HOST_DOWNTIME);
+    char*         hst_name     = (svc ? svc->host_name : hst->name);
+    char*         svc_name     = (svc ? svc->description : NULL);
+    time_t        entry_time   = time(NULL);
+    char*         author       = "nagioseasier";
+    char*         comment_data = "lol this is a test";
+    time_t        start_time   = time(NULL);
+    time_t        end_time     = 0L; /* only used for fixed downtime, TODO some other time */
+    int           fixed        = 0;
+    unsigned long triggered_by = 0L; /* assume triggered by no obj in system? */
+    unsigned long duration     = minutes * 60L; /* assuming duration is seconds */
+    unsigned long downtime_id  = 0L;
+
+
+    end_time = start_time + duration;
+
+    nsock_printf_nul(sd, "Setting %lu minutes of downtime for %s\n", minutes, obj);
+
+    int retval = schedule_downtime(typedowntime,
+				   hst_name,
+				   svc_name,
+				   entry_time,
+				   author,
+				   comment_data,
+				   start_time,
+				   end_time,
+				   fixed,
+				   triggered_by,
+				   duration,
+				   &downtime_id);
+
+    return (retval == OK ? 200 : 400);
   }
 
   nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
