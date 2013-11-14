@@ -369,7 +369,7 @@ commands[] = {
   { "status", nez_cmd_status },
   { "enable_notifications", nez_cmd_enable_notifications },
   { "disable_notifications", nez_cmd_disable_notifications },
-  { "schedule_downtime", nez_cmd_schedule_downtime },
+  { "downtime", nez_cmd_schedule_downtime },
   { "acknowledge", nez_cmd_acknowledge },
   { "unacknowledge", nez_cmd_unacknowledge },
 };
