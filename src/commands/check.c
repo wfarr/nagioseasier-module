@@ -1,6 +1,6 @@
 #include <nagios/nagios.h>
 
-#include "../helpers.h"
+#include "../helper.h"
 #include "check.h"
 
 static int

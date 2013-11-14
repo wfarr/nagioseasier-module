@@ -1,7 +1,6 @@
 #include <nagios/nagios.h>
 
-#include "../helpers.h"
-
+#include "../helper.h"
 #include "notifications.h"
 
 static int
