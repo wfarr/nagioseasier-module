@@ -20,6 +20,8 @@ display_help(int sd)
        "  unacknowledge <object>                   Unacknowledge a host/service problem\n"
        "\n"
        "  downtime <object> [<minutes> <comment]   Schedule downtime for a host/service (opt. num minutes, comment)\n"
+       "\n"
+       "  problems                                 Display all services in a non-OK state\n"
        );
   return 200;
 }
@@ -278,6 +280,23 @@ unacknowledge_problem_for_obj(int sd, const char* obj)
   return 404;
 }
 
+static int
+display_all_service_problems(int sd)
+{
+  service* svc = service_list;
+
+  while (svc != NULL) {
+
+    if (svc->current_state != STATE_OK) {
+      show_status_for_service(sd, svc);
+    }
+
+    svc = svc->next;
+  }
+
+  nsock_printf_nul(sd, "No services in the list!\n");
+  return 404;
+}
 
 // COMMANDS
 
@@ -353,6 +372,15 @@ nez_cmd_unacknowledge(int sd, char* object, char* rest)
 }
 
 static int
+nez_cmd_problems(int sd, char* object, char* rest)
+{
+  (void)object;
+  (void)rest;
+
+  return display_all_service_problems(sd);
+}
+
+static int
 unknown_command(int sd, char* object, char* rest)
 {
   (void)object;
@@ -372,6 +400,7 @@ commands[] = {
   { "downtime", nez_cmd_schedule_downtime },
   { "acknowledge", nez_cmd_acknowledge },
   { "unacknowledge", nez_cmd_unacknowledge },
+  { "problems", nez_cmd_problems },
 };
 
 nez_handler_t
