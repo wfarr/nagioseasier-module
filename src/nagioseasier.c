@@ -63,11 +63,7 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
     *(rest++) = 0;
   }
 
-  for (size_t i = 0; i < countof(nez_commands); i++) {
-    if (nez_string_equals(nez_commands[i].name, action)) {
-      return nez_commands[i].handler(sd, obj, rest);
-    }
-  }
+  nez_lookup_command(action)(sd, obj, rest);
 
   nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
   return 400;

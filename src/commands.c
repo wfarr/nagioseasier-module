@@ -240,6 +240,27 @@ nez_cmd_schedule_downtime(int sd, char* object, char* rest)
   return schedule_downtime_for_obj(sd, object, minutes, comment_data);
 }
 
+static int
+unknown_command(int sd, char* object, char* rest)
+{
+  nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
+  return 404;
+}
+
+nez_handler_t
+nez_lookup_command(const char* cmd)
+{
+  for (size_t i = 0; i < ; i++) {
+    if (nez_string_equals(nez_commands[i].name, cmd)) {
+      return nez_commands[i].handler;
+    }
+  }
+
+  return unknown_command;
+}
+
+
+
 nez_command_t
 nez_commands[] = {
   { "help", nez_cmd_help },
