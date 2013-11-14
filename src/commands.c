@@ -6,26 +6,7 @@
 #include "helper.h"
 #include "commands.h"
 #include "commands/help.h"
-
-static void
-find_host_or_service(const char* name, host** hst, service** svc)
-{
-  *svc = NULL;
-  *hst = NULL;
-
-  char* host_str    = strdup(name);
-  char* service_str = strchr(host_str, '/');
-
-  if (service_str) { /* host/service pair */
-    *service_str++ = 0;
-    *svc = find_service(host_str, service_str);
-  } else { /* host */
-    *hst = find_host(name);
-  }
-
-  free(host_str);
-}
-
+#include "commands/status.h"
 
 static int
 enable_notifications_for_obj(int sd, const char* obj, const char* rest)
@@ -34,7 +15,7 @@ enable_notifications_for_obj(int sd, const char* obj, const char* rest)
 
   host*    hst;
   service* svc;
-  find_host_or_service(obj, &hst, &svc);
+  nez_find_host_or_service(obj, &hst, &svc);
 
   if (svc) {
     enable_service_notifications(svc);
@@ -59,7 +40,7 @@ disable_notifications_for_obj(int sd, const char* obj, const char* rest)
 
   host*    hst;
   service* svc;
-  find_host_or_service(obj, &hst, &svc);
+  nez_find_host_or_service(obj, &hst, &svc);
 
   if (svc) {
     disable_service_notifications(svc);
@@ -84,7 +65,7 @@ schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* 
 
   host*    hst;
   service* svc;
-  find_host_or_service(obj, &hst, &svc);
+  nez_find_host_or_service(obj, &hst, &svc);
 
   if (hst || svc) {
 
@@ -146,83 +127,12 @@ find_service_state(char* state) {
   return 404;
 }
 
-static char*
-format_service_state(int state)
-{
-  switch(state) {
-  case STATE_OK:
-    return "OK";
-  case STATE_WARNING:
-    return "WARNING";
-  case STATE_UNKNOWN:
-    return "UNKNOWN";
-  case STATE_CRITICAL:
-    return "CRITICAL";
-  default:
-    return NULL;
-  }
-}
-
-static void
-show_status_for_service(int sd, service* svc)
-{
-  int   state          = svc->current_state;
-  char* output         = svc->plugin_output;
-  char* friendly_state = format_service_state(state);
-
-  if (friendly_state) {
-    nsock_printf_nul(sd, "%s/%s;%s;%s\n",
-      svc->host_name,
-      svc->description,
-      friendly_state,
-      output);
-  } else {
-    nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n", state);
-  }
-
-  return;
-}
-
-static void
-show_status_for_host(int sd, host* hst)
-{
-  servicesmember* svc_member = hst->services;
-
-  while (svc_member) {
-    show_status_for_service(sd, svc_member->service_ptr);
-    svc_member = svc_member->next;
-  }
-
-  return;
-}
-
-static int
-show_status_for_obj(int sd, const char* obj)
-{
-  host*    hst;
-  service* svc;
-  find_host_or_service(obj, &hst, &svc);
-
-  if (svc) {
-    show_status_for_service(sd, svc);
-    return 200;
-  }
-
-  if (hst) {
-    show_status_for_host(sd, hst);
-    return 200;
-  }
-
-  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
-  return 404;
-}
-
 static int
 acknowledge_problem_for_obj(int sd, const char* obj, char* comment)
 {
   host*    hst;
   service* svc;
-  find_host_or_service(obj, &hst, &svc);
+  nez_find_host_or_service(obj, &hst, &svc);
 
   char* author     = "nagioseasier";
   int   sticky     = 1; // DO NOT send notifications until this service/host recovers
@@ -264,7 +174,7 @@ unacknowledge_problem_for_obj(int sd, const char* obj)
 {
   host*    hst;
   service* svc;
-  find_host_or_service(obj, &hst, &svc);
+  nez_find_host_or_service(obj, &hst, &svc);
 
   if (svc) {
     remove_service_acknowledgement(svc);
@@ -286,12 +196,12 @@ static void
 show_status_for_service_by_state(int sd, int state, service* svc)
 {
   if (state == 404 && svc->current_state != STATE_OK) {
-    show_status_for_service(sd, svc);
+    nez_show_status_for_service(sd, svc);
     return;
   }
 
   if (state != 404 && svc->current_state == state) {
-    show_status_for_service(sd, svc);
+    nez_show_status_for_service(sd, svc);
     return;
   }
 }
@@ -353,7 +263,7 @@ force_nagios_check(int sd, char* obj)
 {
   host*    hst;
   service* svc;
-  find_host_or_service(obj, &hst, &svc);
+  nez_find_host_or_service(obj, &hst, &svc);
 
   time_t delay_time = time(NULL) + 30L;
 
@@ -391,13 +301,6 @@ nez_cmd_frenchman(int sd, char* object, char* rest)
   (void)rest;
   nsock_printf_nul(sd, "yolochocinco!!!!!!\n");
   return 420;     // easter egg
-}
-
-static int
-nez_cmd_status(int sd, char* object, char* rest)
-{
-  (void)rest;
-  return show_status_for_obj(sd, object);
 }
 
 static int
