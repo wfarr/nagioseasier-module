@@ -273,6 +273,9 @@ nez_cmd_schedule_downtime(int sd, char* object, char* rest)
 static int
 unknown_command(int sd, char* object, char* rest)
 {
+  (void)object;
+  (void)rest;
+
   nsock_printf_nul(sd, "UNKNOWN COMMAND\n");
   return 404;
 }
@@ -280,7 +283,7 @@ unknown_command(int sd, char* object, char* rest)
 nez_handler_t
 nez_lookup_command(const char* cmd)
 {
-  for (size_t i = 0; i < ; i++) {
+  for (size_t i = 0; i < countof(nez_commands); i++) {
     if (nez_string_equals(nez_commands[i].name, cmd)) {
       return nez_commands[i].handler;
     }
