@@ -281,22 +281,8 @@ unknown_command(int sd, char* object, char* rest)
   return 404;
 }
 
-nez_handler_t
-nez_lookup_command(const char* cmd)
-{
-  for (size_t i = 0; i < countof(nez_commands); i++) {
-    if (nez_string_equals(nez_commands[i].name, cmd)) {
-      return nez_commands[i].handler;
-    }
-  }
-
-  return unknown_command;
-}
-
-
-
-nez_command_t
-nez_commands[] = {
+static nez_command_t
+commands[] = {
   { "help", nez_cmd_help },
   { "yolo", nez_cmd_frenchman },
   { "status", nez_cmd_status },
@@ -304,3 +290,15 @@ nez_commands[] = {
   { "disable_notifications", nez_cmd_disable_notifications },
   { "schedule_downtime", nez_cmd_schedule_downtime },
 };
+
+nez_handler_t
+nez_lookup_command(const char* cmd)
+{
+  for (size_t i = 0; i < countof(commands); i++) {
+    if (nez_string_equals(commands[i].name, cmd)) {
+      return commands[i].handler;
+    }
+  }
+
+  return unknown_command;
+}
