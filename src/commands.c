@@ -11,9 +11,15 @@ display_help(int sd)
 {
   nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
        "Available commands:\n"
-       "  status                  Display the status of a host or service\n"
-       "  enable_notifications    Enable notifications for a host or host-service\n"
-       "  disable_notifications   Disable notifications for a host or host-service\n"
+       "  status <object>                          Display the status of a host or service\n"
+       "\n"
+       "  enable_notifications <object>            Enable notifications for a host or host-service\n"
+       "  disable_notifications <object>           Disable notifications for a host or host-service\n"
+       "\n"
+       "  acknowledge <object> [<comment>]         Acknowledge a host/service problem (opt. comment)\n"
+       "  unacknowledge <object>                   Unacknowledge a host/service problem\n"
+       "\n"
+       "  downtime <object> [<minutes> <comment]   Schedule downtime for a host/service (opt. num minutes, comment)\n"
        );
   return 200;
 }
