@@ -47,6 +47,8 @@ nebmodule_deinit(int flags, int reason)
 static int
 nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 {
+  (void)len;
+
   char* action = buf;
   char* obj;
 
