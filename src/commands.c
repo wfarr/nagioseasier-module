@@ -5,6 +5,7 @@
 
 #include "helper.h"
 #include "commands.h"
+#include "commands/check.h"
 #include "commands/help.h"
 #include "commands/notifications.h"
 #include "commands/status.h"
@@ -208,40 +209,6 @@ display_service_problems(int sd, char* str, char* state)
   return 200;
 }
 
-static int
-force_nagios_check(int sd, char* obj)
-{
-  host*    hst;
-  service* svc;
-  nez_find_host_or_service(obj, &hst, &svc);
-
-  time_t delay_time = time(NULL) + 30L;
-
-  if (svc) {
-    schedule_service_check(svc, delay_time, CHECK_OPTION_FORCE_EXECUTION);
-    nsock_printf_nul(sd, "SCHEDULED CHECK FOR SERVICE %s\n", obj);
-    return 200;
-  }
-
-  if (hst) {
-    schedule_host_check(hst, delay_time, CHECK_OPTION_FORCE_EXECUTION);
-
-    servicesmember* services = hst->services;
-    for (; services; services = services->next) {
-      service* svc = services->service_ptr;
-
-      // schedule the service checks to occur 30s after the host check
-      schedule_service_check(svc, delay_time + 30L, CHECK_OPTION_FORCE_EXECUTION);
-    }
-
-    nsock_printf_nul(sd, "SCHEDULED CHECKS FOR HOST %s AND ALL ITS SERVICES\n", obj);
-    return 200;
-  }
-
-  nsock_printf_nul(sd, "COULD NOT FIND HOST OR SERVICE %s\n", obj);
-  return 404;
-}
-
 // COMMANDS
 
 static int
@@ -293,14 +260,6 @@ nez_cmd_problems(int sd, char* object, char* rest)
 }
 
 static int
-nez_cmd_check(int sd, char* obj, char* rest)
-{
-  (void)rest;
-
-  return force_nagios_check(sd, obj);
-}
-
-static int
 unknown_command(int sd, char* object, char* rest)
 {
   (void)object;
@@ -315,13 +274,13 @@ commands[] = {
   { "help", nez_cmd_help },
   { "yolo", nez_cmd_frenchman },
   { "status", nez_cmd_status },
+  { "check", nez_cmd_check },
   { "enable_notifications", nez_cmd_enable_notifications },
   { "disable_notifications", nez_cmd_disable_notifications },
   { "downtime", nez_cmd_schedule_downtime },
   { "acknowledge", nez_cmd_acknowledge },
   { "unacknowledge", nez_cmd_unacknowledge },
   { "problems", nez_cmd_problems },
-  { "check", nez_cmd_check },
 };
 
 nez_handler_t
