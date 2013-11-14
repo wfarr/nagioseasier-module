@@ -3,6 +3,7 @@
 #include <nagios/downtime.h>
 #include <nagios/nagios.h>
 
+#include "helper.h"
 #include "commands.h"
 
 static int
