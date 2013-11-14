@@ -249,6 +249,29 @@ acknowledge_problem_for_obj(int sd, const char* obj, char* comment)
   return 404;
 }
 
+static int
+unacknowledge_problem_for_obj(int sd, const char* obj)
+{
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  if (svc) {
+    remove_service_acknowledgement(svc);
+    nsock_printf_nul(sd, "REMOVED ACKNOWLEDGEMENT ON %s\n", obj);
+    return 200;
+  }
+
+  if (hst) {
+    remove_host_acknowledgement(hst);
+    nsock_printf_nul(sd, "REMOVED ACKNOWLEDGEMENT ON %s\n", obj);
+    return 200;
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
+  return 404;
+}
+
 
 // COMMANDS
 
@@ -317,6 +340,13 @@ nez_cmd_acknowledge(int sd, char* object, char* rest)
 }
 
 static int
+nez_cmd_unacknowledge(int sd, char* object, char* rest)
+{
+  (void)rest;
+  return unacknowledge_problem_for_obj(sd, object);
+}
+
+static int
 unknown_command(int sd, char* object, char* rest)
 {
   (void)object;
@@ -335,6 +365,7 @@ commands[] = {
   { "disable_notifications", nez_cmd_disable_notifications },
   { "schedule_downtime", nez_cmd_schedule_downtime },
   { "acknowledge", nez_cmd_acknowledge },
+  { "unacknowledge", nez_cmd_unacknowledge },
 };
 
 nez_handler_t
