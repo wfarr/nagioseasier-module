@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include <nagios/downtime.h>
 #include <nagios/nagios.h>
 
 #include "commands.h"
@@ -35,28 +36,57 @@ find_host_or_service(const char* name, host** hst, service** svc)
   free(host_str);
 }
 
+
 static int
-toggle_notifications_for_obj(int sd, const char* obj, bool enable)
+enable_notifications_for_obj(int sd, const char* obj, const char* rest)
 {
+  (void)rest;
+
   host*    hst;
   service* svc;
   find_host_or_service(obj, &hst, &svc);
 
   if (svc) {
-    (enable ? enable_service_notifications : disable_service_notifications)(svc);
-    nsock_printf_nul(sd, "NOTIFICATIONS %sABLED FOR SERVICE: %s/%s\n", enable ? "EN" : "DIS", svc->host_name, svc->display_name);
+    enable_service_notifications(svc);
+    nsock_printf_nul(sd, "NOTIFICATIONS ENABLED FOR SERVICE: %s/%s\n", svc->host_name, svc->display_name);
     return 200;
   }
 
   if (hst) {
-    (enable ? enable_host_notifications : disable_host_notifications)(hst);
-    nsock_printf_nul(sd, "NOTIFICATIONS %sABLED FOR HOST: %s\n", enable ? "EN" : "DIS", hst->display_name);
+    enable_host_notifications(hst);
+    nsock_printf_nul(sd, "NOTIFICATIONS ENABLED FOR HOST: %s\n", hst->display_name);
     return 200;
   }
 
   nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
   return 404;
 }
+
+static int
+disable_notifications_for_obj(int sd, const char* obj, const char* rest)
+{
+  (void)rest;
+
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  if (svc) {
+    disable_service_notifications(svc);
+    nsock_printf_nul(sd, "NOTIFICATIONS DISABLED FOR SERVICE: %s/%s\n", svc->host_name, svc->display_name);
+    return 200;
+  }
+
+  if (hst) {
+    disable_host_notifications(hst);
+    nsock_printf_nul(sd, "NOTIFICATIONS DISABLED FOR HOST: %s\n", hst->display_name);
+    return 200;
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
+  return 404;
+}
+
 
 static int
 schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* comment_data)
@@ -210,14 +240,14 @@ static int
 nez_cmd_enable_notifications(int sd, char* object, char* rest)
 {
   (void)rest;
-  return toggle_notifications_for_obj(sd, object, true);
+  return enable_notifications_for_obj(sd, object, rest);
 }
 
 static int
 nez_cmd_disable_notifications(int sd, char* object, char* rest)
 {
   (void)rest;
-  return toggle_notifications_for_obj(sd, object, false);
+  return disable_notifications_for_obj(sd, object, rest);
 }
 
 static int
