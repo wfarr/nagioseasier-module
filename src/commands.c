@@ -19,9 +19,9 @@ display_help(int sd)
        "  acknowledge <object> [<comment>]         Acknowledge a host/service problem (opt. comment)\n"
        "  unacknowledge <object>                   Unacknowledge a host/service problem\n"
        "\n"
-       "  downtime <object> [<minutes> <comment]   Schedule downtime for a host/service (opt. num minutes, comment)\n"
+       "  downtime <object> [<minutes> <comment>]  Schedule downtime for a host/service (opt. num minutes, comment)\n"
        "\n"
-       "  problems [<service group>]               Display all services in a non-OK state\n"
+       "  problems [<svcgroup|hstgroup> <state>]   Display all services in a non-OK state\n"
        );
   return 200;
 }
@@ -141,6 +141,27 @@ schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* 
   }
 
   nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
+  return 404;
+}
+
+static int
+find_service_state(char* state) {
+  if (nez_string_equals(state, "ok") || nez_string_equals(state, "OK")) {
+    return STATE_OK;
+  }
+
+  if (nez_string_equals(state, "warning") || nez_string_equals(state, "WARNING")) {
+    return STATE_WARNING;
+  }
+
+  if (nez_string_equals(state, "unknown") || nez_string_equals(state, "UNKNOWN")) {
+    return STATE_UNKNOWN;
+  }
+
+  if (nez_string_equals(state, "critical") || nez_string_equals(state, "CRITICAL")) {
+    return STATE_CRITICAL;
+  }
+
   return 404;
 }
 
@@ -280,41 +301,69 @@ unacknowledge_problem_for_obj(int sd, const char* obj)
   return 404;
 }
 
-static int
-display_all_service_problems(int sd, char* svc_grp_str)
+static void
+show_status_for_service_by_state(int sd, int state, service* svc)
 {
-  if (svc_grp_str) {
-    servicegroup* svc_group = servicegroup_list;
+  if (state == 404 && svc->current_state != STATE_OK) {
+    show_status_for_service(sd, svc);
+    return;
+  }
 
-    while (svc_grp != NULL && svc_grp_str != svc_group->group_name) {
-      svc_group = svc_group->next;
+  if (state != 404 && svc->current_state == state) {
+    show_status_for_service(sd, svc);
+    return;
+  }
+}
+
+static void
+filter_servicesmember_by_state(int sd, int state, servicesmember* services)
+{
+  for (; services; services = services->next) {
+    show_status_for_service_by_state(sd, state, services->service_ptr);
+  }
+}
+
+static void
+filter_services_by_state(int sd, int state, service* svc)
+{
+  for (; svc; svc = svc->next) {
+    show_status_for_service_by_state(sd, state, svc);
+  }
+}
+
+static int
+display_service_problems(int sd, char* str, char* state)
+{
+  // set the desired service state
+  int state_filter = 404;
+  if (state) {
+    state_filter = find_service_state(state);
+  }
+
+  if (str) {
+    // walk servicegroups and look for a match
+    for (servicegroup* svc_group = servicegroup_list; svc_group; svc_group = svc_group->next) {
+      if (nez_string_equals(str, svc_group->group_name)) {
+        filter_servicesmember_by_state(sd, state_filter, svc_group->members);
+        return 200;
+      }
     }
 
-    if (svc_grp) {
-      service* svc = svc_group->members;
-
-      while (svc != NULL) {
-        if (svc->current_state != STATE_OK) {
-          show_status_for_service(sd, svc);
+    // walk hostgroups and look for a match
+    for (hostgroup* hst_group = hostgroup_list; hst_group; hst_group = hst_group->next) {
+      if (nez_string_equals(str, hst_group->group_name)) {
+        for (hostsmember* h = hst_group->members; h; h = h->next) {
+          filter_servicesmember_by_state(sd, state_filter, h->host_ptr->services);
+          return 200;
         }
       }
-
-      return 200;
     }
 
-    nsock_printf_nul(sd, "COULD NOT FIND SERVICEGROUP %s!\n", svc_grp_str);
+    nsock_printf_nul(sd, "COULD NOT FIND SERVICEGROUP OR HOSTGROUP %s\n", str);
     return 404;
   }
 
-  service* svc = service_list;
-
-  while (svc != NULL) {
-    if (svc->current_state != STATE_OK) {
-      show_status_for_service(sd, svc);
-    }
-    svc = svc->next;
-  }
-
+  filter_services_by_state(sd, state_filter, service_list);
   return 200;
 }
 
@@ -394,9 +443,7 @@ nez_cmd_unacknowledge(int sd, char* object, char* rest)
 static int
 nez_cmd_problems(int sd, char* object, char* rest)
 {
-  (void)rest;
-
-  return display_all_service_problems(sd, object);
+  return display_service_problems(sd, object, rest);
 }
 
 static int
