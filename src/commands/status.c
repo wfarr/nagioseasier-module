@@ -29,5 +29,11 @@ int
 nez_cmd_status(int sd, char* object, char* rest)
 {
   (void)rest;
-  return show_status_for_obj(sd, object);
+
+  if (object) {
+    return show_status_for_obj(sd, object);
+  }
+
+  nsock_printf_nul(sd, "#nagioseasier status requires one argument!\n");
+  return 400;
 }
