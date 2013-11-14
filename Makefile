@@ -1,7 +1,7 @@
 CFLAGS=-Wall -Wextra -pedantic -std=c99 -Werror -D_XOPEN_SOURCE=500 -fPIC -g
 
 SONAME=nagioseasier.so
-OBJECTS=src/nagioseasier.o src/helper.o
+OBJECTS=src/nagioseasier.o src/helper.o src/commands.o
 
 all: $(SONAME)
 
