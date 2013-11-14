@@ -11,17 +11,18 @@ display_help(int sd)
 {
   nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
        "Available commands:\n"
-       "  status <object>                          Display the status of a host or service\n"
+       "  status <host|service>                          Display the status of a host or service\n"
+       "  check <host|service>                           Schedule a re-check of the host or service\n"
        "\n"
-       "  enable_notifications <object>            Enable notifications for a host or host-service\n"
-       "  disable_notifications <object>           Disable notifications for a host or host-service\n"
+       "  enable_notifications <host|service>            Enable notifications for a host or host-service\n"
+       "  disable_notifications <host|service>           Disable notifications for a host or host-service\n"
        "\n"
-       "  acknowledge <object> [<comment>]         Acknowledge a host/service problem (opt. comment)\n"
-       "  unacknowledge <object>                   Unacknowledge a host/service problem\n"
+       "  acknowledge <host|service> [<comment>]         Acknowledge a host/service problem (opt. comment)\n"
+       "  unacknowledge <host|service>                   Unacknowledge a host/service problem\n"
        "\n"
-       "  downtime <object> [<minutes> <comment>]  Schedule downtime for a host/service (opt. num minutes, comment)\n"
+       "  downtime <host|service> [<minutes> <comment>]  Schedule downtime for a host/service (opt. num minutes, comment)\n"
        "\n"
-       "  problems [<svcgroup|hstgroup> <state>]   Display all services in a non-OK state\n"
+       "  problems [<svcgroup|hstgroup> <state>]         Display all services in a non-OK state\n"
        );
   return 200;
 }
@@ -367,6 +368,40 @@ display_service_problems(int sd, char* str, char* state)
   return 200;
 }
 
+static int
+force_nagios_check(int sd, char* obj)
+{
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  time_t delay_time = time(NULL) + 30L;
+
+  if (svc) {
+    schedule_service_check(svc, delay_time, CHECK_OPTION_FORCE_EXECUTION);
+    nsock_printf_nul(sd, "SCHEDULED CHECK FOR SERVICE %s\n", obj);
+    return 200;
+  }
+
+  if (hst) {
+    schedule_host_check(hst, delay_time, CHECK_OPTION_FORCE_EXECUTION);
+
+    servicesmember* services = hst->services;
+    for (; services; services = services->next) {
+      service* svc = services->service_ptr;
+
+      // schedule the service checks to occur 30s after the host check
+      schedule_service_check(svc, delay_time + 30L, CHECK_OPTION_FORCE_EXECUTION);
+    }
+
+    nsock_printf_nul(sd, "SCHEDULED CHECKS FOR HOST %s AND ALL ITS SERVICES\n", obj);
+    return 200;
+  }
+
+  nsock_printf_nul(sd, "COULD NOT FIND HOST OR SERVICE %s\n", obj);
+  return 404;
+}
+
 // COMMANDS
 
 static int
@@ -447,6 +482,14 @@ nez_cmd_problems(int sd, char* object, char* rest)
 }
 
 static int
+nez_cmd_check(int sd, char* obj, char* rest)
+{
+  (void)rest;
+
+  return force_nagios_check(sd, obj);
+}
+
+static int
 unknown_command(int sd, char* object, char* rest)
 {
   (void)object;
@@ -467,6 +510,7 @@ commands[] = {
   { "acknowledge", nez_cmd_acknowledge },
   { "unacknowledge", nez_cmd_unacknowledge },
   { "problems", nez_cmd_problems },
+  { "check", nez_cmd_check },
 };
 
 nez_handler_t
