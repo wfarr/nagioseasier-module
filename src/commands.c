@@ -377,9 +377,12 @@ commands[] = {
 nez_handler_t
 nez_lookup_command(const char* cmd)
 {
-  for (size_t i = 0; i < countof(commands); i++) {
-    if (nez_string_equals(commands[i].name, cmd)) {
-      return commands[i].handler;
+
+  if (cmd) {
+    for (size_t i = 0; i < countof(commands); i++) {
+      if (nez_string_equals(commands[i].name, cmd)) {
+        return commands[i].handler;
+      }
     }
   }
 
