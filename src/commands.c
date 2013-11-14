@@ -11,9 +11,15 @@ display_help(int sd)
 {
   nsock_printf_nul(sd, "Query handler for actually doing useful shit with this socket.\n"
        "Available commands:\n"
-       "  status                  Display the status of a host or service\n"
-       "  enable_notifications    Enable notifications for a host or host-service\n"
-       "  disable_notifications   Disable notifications for a host or host-service\n"
+       "  status <object>                          Display the status of a host or service\n"
+       "\n"
+       "  enable_notifications <object>            Enable notifications for a host or host-service\n"
+       "  disable_notifications <object>           Disable notifications for a host or host-service\n"
+       "\n"
+       "  acknowledge <object> [<comment>]         Acknowledge a host/service problem (opt. comment)\n"
+       "  unacknowledge <object>                   Unacknowledge a host/service problem\n"
+       "\n"
+       "  downtime <object> [<minutes> <comment]   Schedule downtime for a host/service (opt. num minutes, comment)\n"
        );
   return 200;
 }
@@ -207,11 +213,73 @@ show_status_for_obj(int sd, const char* obj)
   return 404;
 }
 
+static int
+acknowledge_problem_for_obj(int sd, const char* obj, char* comment)
+{
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  char* author     = "nagioseasier";
+  int   sticky     = 1; // DO NOT send notifications until this service/host recovers
+  int   notify     = 1; // DO send a notification that we have ack'd this
+  int   persistent = 0; // we don't want persistent comments in Nagios
+
+  if (svc) {
+    acknowledge_service_problem(
+      svc,
+      author,
+      comment,
+      sticky,
+      notify,
+      persistent);
+
+    nsock_printf_nul(sd, "ACKNOWLEDGED PROBLEMS ON %s WITH: %s\n", obj, comment);
+    return 200;
+  }
+
+  if (hst) {
+    acknowledge_host_problem(
+      hst,
+      author,
+      comment,
+      sticky,
+      notify,
+      persistent);
+
+    nsock_printf_nul(sd, "ACKNOWLEDGED PROBLEMS ON %s WITH: %s\n", obj, comment);
+    return 200;
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
+  return 404;
+}
+
+static int
+unacknowledge_problem_for_obj(int sd, const char* obj)
+{
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  if (svc) {
+    remove_service_acknowledgement(svc);
+    nsock_printf_nul(sd, "REMOVED ACKNOWLEDGEMENT ON %s\n", obj);
+    return 200;
+  }
+
+  if (hst) {
+    remove_host_acknowledgement(hst);
+    nsock_printf_nul(sd, "REMOVED ACKNOWLEDGEMENT ON %s\n", obj);
+    return 200;
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
+  return 404;
+}
 
 
-
-
-
+// COMMANDS
 
 static int
 nez_cmd_help(int sd, char* object, char* rest)
@@ -272,6 +340,19 @@ nez_cmd_schedule_downtime(int sd, char* object, char* rest)
 }
 
 static int
+nez_cmd_acknowledge(int sd, char* object, char* rest)
+{
+  return acknowledge_problem_for_obj(sd, object, rest);
+}
+
+static int
+nez_cmd_unacknowledge(int sd, char* object, char* rest)
+{
+  (void)rest;
+  return unacknowledge_problem_for_obj(sd, object);
+}
+
+static int
 unknown_command(int sd, char* object, char* rest)
 {
   (void)object;
@@ -288,15 +369,20 @@ commands[] = {
   { "status", nez_cmd_status },
   { "enable_notifications", nez_cmd_enable_notifications },
   { "disable_notifications", nez_cmd_disable_notifications },
-  { "schedule_downtime", nez_cmd_schedule_downtime },
+  { "downtime", nez_cmd_schedule_downtime },
+  { "acknowledge", nez_cmd_acknowledge },
+  { "unacknowledge", nez_cmd_unacknowledge },
 };
 
 nez_handler_t
 nez_lookup_command(const char* cmd)
 {
-  for (size_t i = 0; i < countof(commands); i++) {
-    if (nez_string_equals(commands[i].name, cmd)) {
-      return commands[i].handler;
+
+  if (cmd) {
+    for (size_t i = 0; i < countof(commands); i++) {
+      if (nez_string_equals(commands[i].name, cmd)) {
+        return commands[i].handler;
+      }
     }
   }
 
