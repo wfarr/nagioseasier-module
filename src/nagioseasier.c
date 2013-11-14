@@ -47,10 +47,6 @@ nebmodule_deinit(int flags, int reason)
 static int
 nagioseasier_query_handler(int sd, char* buf, unsigned int len)
 {
-  if (len == 0) {
-    return display_help(sd);
-  }
-
   char* action = buf;
   char* obj;
 
