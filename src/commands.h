@@ -7,4 +7,6 @@ typedef struct {
 }
 nez_command_t;
 
+extern nez_command_t nez_commands[];
+
 #endif
