@@ -207,11 +207,50 @@ show_status_for_obj(int sd, const char* obj)
   return 404;
 }
 
+static int
+acknowledge_problem_for_obj(int sd, const char* obj, char* comment)
+{
+  host*    hst;
+  service* svc;
+  find_host_or_service(obj, &hst, &svc);
+
+  char* author     = "nagioseasier";
+  int   sticky     = 1; // DO NOT send notifications until this service/host recovers
+  int   notify     = 1; // DO send a notification that we have ack'd this
+  int   persistent = 0; // we don't want persistent comments in Nagios
+
+  if (svc) {
+    acknowledge_service_problem(
+      svc,
+      author,
+      comment,
+      sticky,
+      notify,
+      persistent);
+
+    nsock_printf_nul(sd, "ACKNOWLEDGED PROBLEMS ON %s WITH: %s\n", obj, comment);
+    return 200;
+  }
+
+  if (hst) {
+    acknowledge_host_problem(
+      hst,
+      author,
+      comment,
+      sticky,
+      notify,
+      persistent);
+
+    nsock_printf_nul(sd, "ACKNOWLEDGED PROBLEMS ON %s WITH: %s\n", obj, comment);
+    return 200;
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR %s\n", obj);
+  return 404;
+}
 
 
-
-
-
+// COMMANDS
 
 static int
 nez_cmd_help(int sd, char* object, char* rest)
@@ -272,6 +311,12 @@ nez_cmd_schedule_downtime(int sd, char* object, char* rest)
 }
 
 static int
+nez_cmd_acknowledge(int sd, char* object, char* rest)
+{
+  return acknowledge_problem_for_obj(sd, object, rest);
+}
+
+static int
 unknown_command(int sd, char* object, char* rest)
 {
   (void)object;
@@ -289,6 +334,7 @@ commands[] = {
   { "enable_notifications", nez_cmd_enable_notifications },
   { "disable_notifications", nez_cmd_disable_notifications },
   { "schedule_downtime", nez_cmd_schedule_downtime },
+  { "acknowledge", nez_cmd_acknowledge },
 };
 
 nez_handler_t
