@@ -21,7 +21,7 @@ display_help(int sd)
        "\n"
        "  downtime <object> [<minutes> <comment]   Schedule downtime for a host/service (opt. num minutes, comment)\n"
        "\n"
-       "  problems                                 Display all services in a non-OK state\n"
+       "  problems [<service group>]               Display all services in a non-OK state\n"
        );
   return 200;
 }
@@ -281,21 +281,41 @@ unacknowledge_problem_for_obj(int sd, const char* obj)
 }
 
 static int
-display_all_service_problems(int sd)
+display_all_service_problems(int sd, char* svc_grp_str)
 {
+  if (svc_grp_str) {
+    servicegroup* svc_group = servicegroup_list;
+
+    while (svc_grp != NULL && svc_grp_str != svc_group->group_name) {
+      svc_group = svc_group->next;
+    }
+
+    if (svc_grp) {
+      service* svc = svc_group->members;
+
+      while (svc != NULL) {
+        if (svc->current_state != STATE_OK) {
+          show_status_for_service(sd, svc);
+        }
+      }
+
+      return 200;
+    }
+
+    nsock_printf_nul(sd, "COULD NOT FIND SERVICEGROUP %s!\n", svc_grp_str);
+    return 404;
+  }
+
   service* svc = service_list;
 
   while (svc != NULL) {
-
     if (svc->current_state != STATE_OK) {
       show_status_for_service(sd, svc);
     }
-
     svc = svc->next;
   }
 
-  nsock_printf_nul(sd, "No services in the list!\n");
-  return 404;
+  return 200;
 }
 
 // COMMANDS
@@ -374,10 +394,9 @@ nez_cmd_unacknowledge(int sd, char* object, char* rest)
 static int
 nez_cmd_problems(int sd, char* object, char* rest)
 {
-  (void)object;
   (void)rest;
 
-  return display_all_service_problems(sd);
+  return display_all_service_problems(sd, object);
 }
 
 static int
