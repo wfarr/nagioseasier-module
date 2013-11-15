@@ -1,5 +1,5 @@
-#ifndef HELPER_H
-#define HELPER_H
+#ifndef NEZ_HELPER_H
+#define NEZ_HELPER_H
 
 #define countof(x) (sizeof(x) / sizeof(*(x)))
 
