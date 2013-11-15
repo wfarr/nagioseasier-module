@@ -19,12 +19,12 @@ Then you should just be able to build this with:
 make
 ```
 
-And then you'll get a `nagioseasier.o` file. You can put it wherever, really, but I recommend `/usr/lib/nagioseasier/nagioseasier.o`.
+And then you'll get a `nagioseasier.so` file. You can put it wherever, really, but I recommend `/usr/lib/nagioseasier/nagioseasier.so`.
 
 From there you can load it in your Nagios configuration as an Event Broker Module with a config line like so:
 
 ```
-broker_module=/usr/lib/nagioseasier/nagioseasier.o
+broker_module=/usr/lib/nagioseasier/nagioseasier.so
 ```
 
 ## Using
