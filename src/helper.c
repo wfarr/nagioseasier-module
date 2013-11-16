@@ -44,7 +44,7 @@ nez_show_status_for_service(int sd, service* svc)
       friendly_state,
       output);
   } else {
-    nsock_printf_nul(sd, "Somehow Nagios thinks this state is something invalid: %i\n", state);
+    nsock_printf_nul(sd, "SOMEHOW NAGIOS THINKS THIS STATE IS SOMETHING INVALID: %i\n", state);
   }
 
   return;
