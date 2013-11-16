@@ -31,7 +31,7 @@ schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* 
 
     end_time = start_time + duration;
 
-    nsock_printf_nul(sd, "Setting %lu minutes of downtime for %s\n", minutes, obj);
+    nsock_printf_nul(sd, "SCHEDULED %lu MINUTES OF DOWNTIME FOR %s WITH MESSAGE: %s\n", minutes, obj, comment_data);
 
     int retval = schedule_downtime(typedowntime,
       hst_name,
