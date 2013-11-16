@@ -20,7 +20,7 @@ nez_cmd_frenchman(int sd, char* object, char* rest)
 {
   (void)object;
   (void)rest;
-  nsock_printf_nul(sd, "yolochocinco!!!!!!\n");
+  nsock_printf_nul(sd, "http://yolochocin.co/\n");
   return 420;     // easter egg
 }
 
