@@ -18,7 +18,7 @@ display_help(int sd)
        "\n"
        "  downtime <host|service> [<minutes> <comment>]  Schedule downtime for a host/service (opt. num minutes, comment)\n"
        "\n"
-       "  problems [<svcgroup|hstgroup> <state>]         Display all services in a non-OK state\n"
+       "  problems [<svcgroup|hstgroup|host> <state>]    Display all services in a non-OK state\n"
        );
   return 200;
 }

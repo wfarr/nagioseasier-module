@@ -82,6 +82,13 @@ display_service_problems(int sd, char* str, char* state)
       }
     }
 
+    for (host* hst = host_list; hst; hst = hst->next) {
+      if (nez_string_equals(str, hst->name)) {
+        filter_servicesmember_by_state(sd, state_filter, h->services);
+        return 200;
+      }
+    }
+
     nsock_printf_nul(sd, "COULD NOT FIND SERVICEGROUP OR HOSTGROUP %s\n", str);
     return 404;
   }
