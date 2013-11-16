@@ -34,6 +34,6 @@ nez_cmd_status(int sd, char* object, char* rest)
     return show_status_for_obj(sd, object);
   }
 
-  nsock_printf_nul(sd, "#nagioseasier status requires one argument!\n");
+  nsock_printf_nul(sd, "STATUS: INVALID NUMBER OF ARGUMENTS, REQUIRES AT LEAST ONE ARGUMENT!\n");
   return 400;
 }
