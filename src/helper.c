@@ -16,31 +16,31 @@ nez_string_equals(const char* a, const char* b)
 static char*
 format_service_state(service* svc)
 {
-  char* retval;
+  const char* state = NULL;
+  char* retval = NULL;
 
-  int state = svc->current_state;
-
-
-  switch(state) {
+  switch(svc->current_state) {
   case STATE_OK:
-    retval = "OK";
+    state = "OK";
     break;
   case STATE_WARNING:
-    retval = "WARNING";
+    state = "WARNING";
     break;
   case STATE_UNKNOWN:
-    retval = "UNKNOWN";
+    state = "UNKNOWN";
     break;
   case STATE_CRITICAL:
-    retval = "CRITICAL";
-    break;
-  default:
-    retval = NULL;
+    state = "CRITICAL";
     break;
   }
 
-  if (retval && svc->notifications_enabled == 0) {
-    retval = strcat(retval, "/MUTED");
+  if (state) {
+    retval = malloc(strlen(state) + 7);
+    strcpy(retval, state);
+
+    if (svc->notifications_enabled == 0) {
+      retval = strcat(retval, "/MUTED");
+    }
   }
 
   return retval;
@@ -61,6 +61,7 @@ nez_show_status_for_service(int sd, service* svc)
     nsock_printf_nul(sd, "SOMEHOW NAGIOS THINKS THIS STATE IS SOMETHING INVALID: %i\n", svc->current_state);
   }
 
+  free(friendly_state);
   return;
 }
 
