@@ -63,6 +63,28 @@ disable_notifications_for_obj(int sd, const char* obj, const char* rest)
   return 404;
 }
 
+static int
+show_muted_services(int sd)
+{
+  for (service* svc = service_list; svc; svc = svc->next) {
+    if (svc->notifications_enabled == 0) {
+      nez_show_status_for_service(sd, svc);
+    }
+  }
+
+  nsock_printf_nul(sd, "NO SERVICES FOUND");
+  return 404;
+}
+
+int
+nez_cmd_show_muted(int sd, char* object, char* rest)
+{
+  (void)object;
+  (void)rest;
+
+  return show_muted_services(sd);
+}
+
 int
 nez_cmd_enable_notifications(int sd, char* object, char* rest)
 {

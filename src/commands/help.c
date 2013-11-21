@@ -19,6 +19,7 @@ display_help(int sd)
        "  downtime <host|service> [<minutes> <comment>]  Schedule downtime for a host/service (opt. num minutes, comment)\n"
        "\n"
        "  problems [<svcgroup|hstgroup|host> <state>]    Display all services in a non-OK state\n"
+       "  muted                                          Display all services that do not have notifications enabled\n"
        );
   return 200;
 }

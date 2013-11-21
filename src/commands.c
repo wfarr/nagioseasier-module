@@ -45,6 +45,7 @@ commands[] = {
   { "acknowledge", nez_cmd_acknowledge },
   { "unacknowledge", nez_cmd_unacknowledge },
   { "problems", nez_cmd_problems },
+  { "muted",  nez_cmd_show_muted },
 };
 
 nez_handler_t
