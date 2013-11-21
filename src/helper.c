@@ -24,14 +24,19 @@ format_service_state(service* svc)
   switch(state) {
   case STATE_OK:
     retval = "OK";
+    break;
   case STATE_WARNING:
     retval = "WARNING";
+    break;
   case STATE_UNKNOWN:
     retval = "UNKNOWN";
+    break;
   case STATE_CRITICAL:
     retval = "CRITICAL";
+    break;
   default:
     retval = NULL;
+    break;
   }
 
   if (retval && svc->notifications_enabled == 0) {
