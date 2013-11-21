@@ -22,7 +22,7 @@ enable_notifications_for_obj(int sd, const char* obj, const char* rest)
     enable_host_notifications(hst);
     nsock_printf_nul(sd, "NOTIFICATIONS ENABLED FOR HOST (AND ITS SERVICES): %s\n", hst->display_name);
 
-    for(svc = hst->services; svc; svc = svc->services) {
+    for(svc = hst->services; svc; svc = svc->next) {
       enable_service_notifications(svc);
     }
 
@@ -52,7 +52,7 @@ disable_notifications_for_obj(int sd, const char* obj, const char* rest)
     disable_host_notifications(hst);
     nsock_printf_nul(sd, "NOTIFICATIONS DISABLED FOR HOST (AND ITS SERVICES): %s\n", hst->display_name);
 
-    for(svc = hst->services; svc; svc = svc->services) {
+    for(svc = hst->services; svc; svc = svc->next) {
       disable_service_notifications(svc);
     }
 
