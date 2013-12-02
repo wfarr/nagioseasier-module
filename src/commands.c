@@ -11,6 +11,7 @@
 #include "commands/help.h"
 #include "commands/notifications.h"
 #include "commands/problems.h"
+#include "commands/stats.h"
 #include "commands/status.h"
 
 // COMMANDS
@@ -37,6 +38,7 @@ static nez_command_t
 commands[] = {
   { "help", nez_cmd_help },
   { "yolo", nez_cmd_frenchman },
+  { "stats",  nez_cmd_stats },
   { "status", nez_cmd_status },
   { "check", nez_cmd_check },
   { "enable_notifications", nez_cmd_enable_notifications },
