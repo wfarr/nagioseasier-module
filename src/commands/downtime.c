@@ -7,15 +7,9 @@
 #include "downtime.h"
 
 static int
-schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* comment_data)
+schedule_downtime_for_obj(int sd, host* hst, service* svc, unsigned long minutes, char* comment_data)
 {
-
-  host*    hst;
-  service* svc;
-  nez_find_host_or_service(obj, &hst, &svc);
-
   if (hst || svc) {
-
     int           typedowntime = (svc ? SERVICE_DOWNTIME : HOST_DOWNTIME);
     char*         hst_name     = (svc ? svc->host_name : hst->name);
     char*         svc_name     = (svc ? svc->description : NULL);
@@ -31,7 +25,11 @@ schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* 
 
     end_time = start_time + duration;
 
-    nsock_printf_nul(sd, "SCHEDULED %lu MINUTES OF DOWNTIME FOR %s WITH MESSAGE: %s\n", minutes, obj, comment_data);
+    if (svc_name) {
+	  nsock_printf_nul(sd, "SCHEDULED %lu MINUTES OF DOWNTIME FOR %s/%s WITH MESSAGE: %s\n", minutes, hst_name, svc_name, comment_data);
+    } else {
+	  nsock_printf_nul(sd, "SCHEDULED %lu MINUTES OF DOWNTIME FOR %s WITH MESSAGE: %s\n", minutes, hst_name, comment_data);
+    }
 
     int retval = schedule_downtime(typedowntime,
       hst_name,
@@ -49,7 +47,6 @@ schedule_downtime_for_obj(int sd, const char* obj, unsigned long minutes, char* 
     return (retval == OK ? 200 : 400);
   }
 
-  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", obj);
   return 404;
 }
 
@@ -70,5 +67,25 @@ nez_cmd_schedule_downtime(int sd, char* object, char* rest)
 
   minutes = (minutes > 1 ? minutes : 15L);
 
-  return schedule_downtime_for_obj(sd, object, minutes, comment_data);
+  host*    hst;
+  service* svc;
+  nez_find_host_or_service(object, &hst, &svc);
+
+  if (svc) {
+	schedule_downtime_for_obj(sd, NULL, svc, minutes, comment_data);
+	return 200;
+  }
+
+  if (hst) {
+	schedule_downtime_for_obj(sd, hst, NULL, minutes, comment_data);
+
+    for (servicesmember* svcmem = hst->services; svcmem; svcmem = svcmem->next) {
+	  schedule_downtime_for_obj(sd, NULL, svcmem->service_ptr, minutes, comment_data);
+    }
+
+    return 200;
+  }
+
+  nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", object);
+  return 404;
 }
