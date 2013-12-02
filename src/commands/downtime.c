@@ -26,9 +26,9 @@ schedule_downtime_for_obj(int sd, host* hst, service* svc, unsigned long minutes
     end_time = start_time + duration;
 
     if (svc_name) {
-	  nsock_printf_nul(sd, "SCHEDULED %lu MINUTES OF DOWNTIME FOR %s/%s WITH MESSAGE: %s\n", minutes, hst_name, svc_name, comment_data);
+      nsock_printf_nul(sd, "SCHEDULED %lu MINUTES OF DOWNTIME FOR %s/%s WITH MESSAGE: %s\n", minutes, hst_name, svc_name, comment_data);
     } else {
-	  nsock_printf_nul(sd, "SCHEDULED %lu MINUTES OF DOWNTIME FOR %s WITH MESSAGE: %s\n", minutes, hst_name, comment_data);
+      nsock_printf_nul(sd, "SCHEDULED %lu MINUTES OF DOWNTIME FOR %s WITH MESSAGE: %s\n", minutes, hst_name, comment_data);
     }
 
     int retval = schedule_downtime(typedowntime,
@@ -72,15 +72,15 @@ nez_cmd_schedule_downtime(int sd, char* object, char* rest)
   nez_find_host_or_service(object, &hst, &svc);
 
   if (svc) {
-	schedule_downtime_for_obj(sd, NULL, svc, minutes, comment_data);
-	return 200;
+    schedule_downtime_for_obj(sd, NULL, svc, minutes, comment_data);
+    return 200;
   }
 
   if (hst) {
-	schedule_downtime_for_obj(sd, hst, NULL, minutes, comment_data);
+    schedule_downtime_for_obj(sd, hst, NULL, minutes, comment_data);
 
     for (servicesmember* svcmem = hst->services; svcmem; svcmem = svcmem->next) {
-	  schedule_downtime_for_obj(sd, NULL, svcmem->service_ptr, minutes, comment_data);
+      schedule_downtime_for_obj(sd, NULL, svcmem->service_ptr, minutes, comment_data);
     }
 
     return 200;
