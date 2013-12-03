@@ -9,6 +9,7 @@ OBJECTS=\
 	src/commands/help.o \
 	src/commands/notifications.o \
 	src/commands/problems.o \
+	src/commands/stats.o \
 	src/commands/status.o \
 	src/helper.o \
 	src/nagioseasier.o \
