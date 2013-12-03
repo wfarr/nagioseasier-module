@@ -4,4 +4,4 @@
 int
 nez_cmd_stats(int sd, char* object, char* rest);
 
-#endif NEZ_COMMANDS_STATS_H
+#endif
