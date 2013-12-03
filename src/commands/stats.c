@@ -15,7 +15,7 @@ int nez_cmd_stats(int sd, char* object, char* rest)
   int unknown  = 0;
   int ok       = 0;
 
-  char* json = "{ \"warning\": %d, \"unknown\": %d, \"critical\": %d, \"ok\": %d }";
+  char* json = "{ \"warning\": %d, \"unknown\": %d, \"critical\": %d, \"ok\": %d }\n";
 
   for (service* svc = service_list; svc; svc = svc->next) {
     switch(svc->current_state) {
