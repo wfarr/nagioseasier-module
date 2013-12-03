@@ -14,9 +14,14 @@ symbols = `nm -gu #{ENV["SONAME"]} | grep -v GLIBC`.lines.map { |line|
   symbol
 }
 
+errors = 0
+
 symbols.each do |symbol|
   `grep -qr #{symbol} /usr/include/nagios`
   next if $?.success?
   next if IGNORED_UNDEFINED_SYMBOLS.include?(symbol)
+  errors += 1
   puts "Undefined symbol reference `#{symbol}' does not appear to belong to nagios."
 end
+
+exit errors.zero?
