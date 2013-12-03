@@ -8,5 +8,10 @@ all: $(SONAME)
 $(SONAME): $(OBJECTS)
 	$(CC) -shared $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+.PHONY: clean doctor
+
 clean:
 	rm -f $(SONAME) $(OBJECTS)
+
+doctor: $(SONAME)
+	SONAME=$(SONAME) ruby script/doctor.rb
