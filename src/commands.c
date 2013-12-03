@@ -11,6 +11,7 @@
 #include "commands/help.h"
 #include "commands/notifications.h"
 #include "commands/problems.h"
+#include "commands/stats.h"
 #include "commands/status.h"
 
 // COMMANDS
@@ -46,6 +47,7 @@ commands[] = {
   { "unacknowledge", nez_cmd_unacknowledge },
   { "problems", nez_cmd_problems },
   { "muted",  nez_cmd_show_muted },
+  { "stats",  nez_cmd_stats},
 };
 
 nez_handler_t
