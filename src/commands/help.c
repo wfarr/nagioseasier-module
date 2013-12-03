@@ -20,6 +20,8 @@ display_help(int sd)
        "\n"
        "  problems [<svcgroup|hstgroup|host> <state>]    Display all services in a non-OK state\n"
        "  muted                                          Display all services that do not have notifications enabled\n"
+       "\n"
+       "  stats                                          Display service statistics\n"
        );
   return 200;
 }
