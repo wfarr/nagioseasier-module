@@ -50,8 +50,8 @@ nagioseasier_query_handler(int sd, char* buf, unsigned int len)
   (void)len;
 
   char* action = buf;
-  char* obj;
-  char* rest;
+  char* obj = NULL;
+  char* rest = NULL;
 
   /* separate our action and obj */
   if (buf && (obj = strchr(buf, ' '))) {
