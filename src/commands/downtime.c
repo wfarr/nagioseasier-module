@@ -50,7 +50,7 @@ schedule_downtime_for_obj(int sd, host* hst, service* svc, unsigned long minutes
 }
 
 int
-nez_cmd_schedule_downtime(int sd, char* object, char* rest)
+cmd_schedule_downtime(int sd, char* object, char* rest, int fixed)
 {
   unsigned long minutes;
   char* comment_data;
@@ -87,4 +87,16 @@ nez_cmd_schedule_downtime(int sd, char* object, char* rest)
 
   nsock_printf_nul(sd, "NO HOST OR SERVICE FOUND FOR: %s", object);
   return 404;
+}
+
+int
+nez_cmd_schedule_flex_downtime(int sd, char* object, char *rest)
+{
+  cmd_schedule_downtime(sd, object, rest, 0);
+}
+
+int
+nez_cmd_schedule_fixed_downtime(int sd, char* object, char *rest)
+{
+  cmd_schedule_downtime(sd, object, rest, 1);
 }
