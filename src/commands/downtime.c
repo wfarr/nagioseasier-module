@@ -7,7 +7,7 @@
 #include "downtime.h"
 
 static int
-schedule_downtime_for_obj(int sd, host* hst, service* svc, unsigned long minutes, char* comment_data)
+schedule_downtime_for_obj(int sd, host* hst, service* svc, unsigned long minutes, char* comment_data, int fixed)
 {
   if (hst || svc) {
     int           typedowntime = (svc ? SERVICE_DOWNTIME : HOST_DOWNTIME);
@@ -16,8 +16,7 @@ schedule_downtime_for_obj(int sd, host* hst, service* svc, unsigned long minutes
     time_t        entry_time   = time(NULL);
     char*         author       = "nagioseasier";
     time_t        start_time   = time(NULL);
-    time_t        end_time     = 0L; /* only used for fixed downtime, TODO some other time */
-    int           fixed        = 0;
+    time_t        end_time     = 0L; /* only used for fixed downtime */
     unsigned long triggered_by = 0L; /* assume triggered by no obj in system? */
     unsigned long duration     = minutes * 60L; /* assuming duration is seconds */
     unsigned long downtime_id  = 0L;
