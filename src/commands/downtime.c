@@ -71,15 +71,15 @@ cmd_schedule_downtime(int sd, char* object, char* rest, int fixed)
   nez_find_host_or_service(object, &hst, &svc);
 
   if (svc) {
-    schedule_downtime_for_obj(sd, NULL, svc, minutes, comment_data);
+    schedule_downtime_for_obj(sd, NULL, svc, minutes, comment_data, fixed);
     return 200;
   }
 
   if (hst) {
-    schedule_downtime_for_obj(sd, hst, NULL, minutes, comment_data);
+    schedule_downtime_for_obj(sd, hst, NULL, minutes, comment_data, fixed);
 
     for (servicesmember* svcmem = hst->services; svcmem; svcmem = svcmem->next) {
-      schedule_downtime_for_obj(sd, NULL, svcmem->service_ptr, minutes, comment_data);
+      schedule_downtime_for_obj(sd, NULL, svcmem->service_ptr, minutes, comment_data, fixed);
     }
 
     return 200;
