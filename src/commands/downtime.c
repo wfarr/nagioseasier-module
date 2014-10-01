@@ -53,7 +53,7 @@ schedule_downtime_for_obj(int sd, host* hst, service* svc, unsigned long minutes
 int
 nez_cmd_schedule_downtime(int sd, char* object, char* rest)
 {
-  unsigned long minutes;
+  unsigned long minutes = 15L;
   char* comment_data;
 
   // assume the next argument is number of minutes

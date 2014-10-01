@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wextra -pedantic -std=c99 -Werror -D_XOPEN_SOURCE=500 -fPIC -g
+CFLAGS=-Wall -Wextra -pedantic -std=c99 -Werror -D_XOPEN_SOURCE=600 -fPIC -g $(LIB) $(INC)
 
 SONAME=nagioseasier.so
 OBJECTS=\
